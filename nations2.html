@@ -26,6 +26,7 @@
                         'fade-in': 'fadeIn 0.6s ease-in-out',
                         'slide-up': 'slideUp 0.5s ease-out',
                         'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'pulse-fast': 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
                     },
                     keyframes: {
                         fadeIn: {
@@ -51,11 +52,14 @@
                 @apply transition-all duration-300 hover:shadow-xl hover:scale-[1.02];
             }
             .image-container {
-                @apply relative overflow-hidden rounded-t-lg;
+                @apply relative overflow-hidden rounded-t-lg bg-gray-100;
                 padding-top: 66.67%; /* 3:2 图片比例，适合展示国家风景 */
             }
             .image-cover {
-                @apply absolute inset-0 w-full h-full object-cover transition-transform duration-700;
+                @apply absolute inset-0 w-full h-full object-cover transition-all duration-700 opacity-0;
+            }
+            .image-cover.loaded {
+                @apply opacity-100;
             }
             .card-link:hover .image-cover {
                 @apply scale-110;
@@ -65,6 +69,12 @@
             }
             .btn-outline {
                 @apply border border-gray-300 hover:border-primary text-gray-700 hover:text-primary font-medium py-2 px-4 rounded-lg transition-all duration-300;
+            }
+            .image-loader {
+                @apply absolute inset-0 flex items-center justify-center bg-gray-100;
+            }
+            .share-btn {
+                @apply text-sm text-gray-600 hover:text-primary transition-colors flex items-center gap-1;
             }
         }
     </style>
@@ -125,14 +135,19 @@
 
     <!-- 结果展示区域 -->
     <section id="resultSection" class="hidden">
-        <div class="flex justify-between items-center mb-6 max-w-6xl mx-auto">
+        <div class="flex flex-wrap justify-between items-center mb-6 max-w-6xl mx-auto gap-4">
             <h2 class="text-xl font-semibold flex items-center">
                 <i class="fa fa-trophy text-accent mr-2"></i> 抽取结果
                 <span id="resultCount" class="ml-2 text-sm text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full"></span>
             </h2>
-            <button id="redrawBtn" class="btn-outline">
-                <i class="fa fa-refresh mr-1"></i> 重新抽取
-            </button>
+            <div class="flex gap-3">
+                <button id="shareBtn" class="btn-outline">
+                    <i class="fa fa-share-alt mr-1"></i> 分享结果
+                </button>
+                <button id="redrawBtn" class="btn-outline">
+                    <i class="fa fa-refresh mr-1"></i> 重新抽取
+                </button>
+            </div>
         </div>
 
         <!-- 国家卡片容器 -->
@@ -163,8 +178,8 @@
                     <div class="text-xs text-gray-500">图片比例</div>
                 </div>
                 <div class="bg-gray-100 rounded-lg p-3 text-center text-sm">
-                    <div class="font-medium">随机</div>
-                    <div class="text-xs text-gray-500">公平分配</div>
+                    <div class="font-medium">可分享</div>
+                    <div class="text-xs text-gray-500">结果链接</div>
                 </div>
             </div>
         </div>
@@ -184,6 +199,33 @@
         </div>
     </section>
 </main>
+
+<!-- 分享模态框 -->
+<div id="shareModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-xl max-w-md w-full p-6 animate-fade-in">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold">分享结果</h3>
+            <button id="closeShareModal" class="text-gray-500 hover:text-gray-800">
+                <i class="fa fa-times"></i>
+            </button>
+        </div>
+        <p class="text-gray-600 mb-4">复制下面的链接，分享给他人查看相同的抽取结果：</p>
+        <div class="flex gap-2 mb-4">
+            <input type="text" id="shareUrl" class="flex-grow px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" readonly>
+            <button id="copyUrlBtn" class="btn-outline whitespace-nowrap">
+                <i class="fa fa-copy mr-1"></i> 复制
+            </button>
+        </div>
+        <div class="flex gap-2">
+            <button class="btn-outline flex-1" id="shareWechatBtn">
+                <i class="fa fa-weixin text-green-500 mr-1"></i> 微信
+            </button>
+            <button class="btn-outline flex-1" id="shareQQBtn">
+                <i class="fa fa-qq text-blue-500 mr-1"></i> QQ
+            </button>
+        </div>
+    </div>
+</div>
 
 <!-- 页脚 -->
 <footer class="bg-gray-900 text-gray-300 mt-12">
@@ -206,23 +248,23 @@
 <script>
     // 17个国家的数据 - 包含国家名称和封面图
     const countryDatabase = [
-        { name: "中国", image: "https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/china.jpg", flag: "🇨🇳" },
-        { name: "美国", image: "https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/america.jpg", flag: "🇺🇸" },
-        { name: "埃塞俄比亚", image: "https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/ethiopia.jpg", flag: "🇪🇹" },
-        { name: "印度", image: "https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/india.jpg", flag: "🇮🇳" },
-        { name: "日本", image: "https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/japan.jpg", flag: "🇯🇵" },
-        { name: "韩国", image: "https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/korea.jpg", flag: "🇰🇷" },
-        { name: "马里", image: "https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/mali.jpg", flag: "🇲🇱" },
-        { name: "蒙古国", image: "https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/mongolia.jpg", flag: "🇲🇳" },
-        { name: "波兰", image: "https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/poland.jpg", flag: "🇵🇱" },
-        { name: "葡萄牙", image: "https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/portugal.jpg", flag: "🇵🇹" },
-        { name: "罗马", image: "https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/rome.jpg", flag: "🇮🇹" },
-        { name: "维京", image: "https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/vikings.jpg", flag: "🇳🇴" },
-        { name: "波斯", image: "https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/persia.jpg", flag: "🇮🇷" },
-        { name: "埃及", image: "https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/egypt.jpg", flag: "🇪🇬" },
-        { name: "威尼斯", image: "https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/venice.jpg", flag: "🇮🇹" },
-        { name: "阿拉伯", image: "https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/arab.jpg", flag: "🇦🇪" },
-        { name: "希腊", image: "https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/greece.jpg", flag: "🇬🇷" }
+        { name: "中国", image: "https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/china.jpg", flag: "🇨🇳", id: 0 },
+        { name: "美国", image: "https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/america.jpg", flag: "🇺🇸", id: 1 },
+        { name: "埃塞俄比亚", image: "https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/ethiopia.jpg", flag: "🇪🇹", id: 2 },
+        { name: "印度", image: "https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/india.jpg", flag: "🇮🇳", id: 3 },
+        { name: "日本", image: "https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/japan.jpg", flag: "🇯🇵", id: 4 },
+        { name: "韩国", image: "https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/korea.jpg", flag: "🇰🇷", id: 5 },
+        { name: "马里", image: "https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/mali.jpg", flag: "🇲🇱", id: 6 },
+        { name: "蒙古国", image: "https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/mongolia.jpg", flag: "🇲🇳", id: 7 },
+        { name: "波兰", image: "https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/poland.jpg", flag: "🇵🇱", id: 8 },
+        { name: "葡萄牙", image: "https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/portugal.jpg", flag: "🇵🇹", id: 9 },
+        { name: "罗马", image: "https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/rome.jpg", flag: "🇮🇹", id: 10 },
+        { name: "维京", image: "https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/vikings.jpg", flag: "🇳🇴", id: 11 },
+        { name: "波斯", image: "https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/persia.jpg", flag: "🇮🇷", id: 12 },
+        { name: "埃及", image: "https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/egypt.jpg", flag: "🇪🇬", id: 13 },
+        { name: "威尼斯", image: "https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/venice.jpg", flag: "🇮🇹", id: 14 },
+        { name: "阿拉伯", image: "https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/arab.jpg", flag: "🇦🇪", id: 15 },
+        { name: "希腊", image: "https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/greece.jpg", flag: "🇬🇷", id: 16 }
     ];
 
     // DOM元素
@@ -238,10 +280,68 @@
     const playerTip = document.getElementById('playerTip');
     const loadingText = document.getElementById('loadingText');
     const loadingBar = document.getElementById('loadingBar');
+    const shareBtn = document.getElementById('shareBtn');
+    const shareModal = document.getElementById('shareModal');
+    const closeShareModal = document.getElementById('closeShareModal');
+    const shareUrl = document.getElementById('shareUrl');
+    const copyUrlBtn = document.getElementById('copyUrlBtn');
+    const shareWechatBtn = document.getElementById('shareWechatBtn');
+    const shareQQBtn = document.getElementById('shareQQBtn');
 
     // 状态变量
     let selectedPlayerCount = 1;
     let drawnCountries = [];
+    let currentSeed = null; // 用于生成随机数的种子
+
+    // 初始化页面
+    document.addEventListener('DOMContentLoaded', () => {
+        // 解析URL参数
+        const params = new URLSearchParams(window.location.search);
+        const countriesParam = params.get('countries');
+        const countParam = params.get('count');
+        const seedParam = params.get('seed');
+
+        // 如果有有效的参数，直接加载结果
+        if (countriesParam && countParam && seedParam) {
+            try {
+                // 解析参数
+                const countryIds = countriesParam.split(',').map(Number);
+                const playerCount = parseInt(countParam);
+
+                // 验证参数有效性
+                if (countryIds.length === playerCount && playerCount >= 1 && playerCount <= 5) {
+                    // 根据ID获取国家数据
+                    drawnCountries = countryIds.map(id => {
+                        const country = countryDatabase.find(c => c.id === id);
+                        if (!country) throw new Error('无效的国家ID');
+                        return country;
+                    });
+
+                    // 设置选中的玩家数量
+                    selectedPlayerCount = playerCount;
+                    playerBtns.forEach(btn => {
+                        if (parseInt(btn.dataset.count) === selectedPlayerCount) {
+                            btn.click(); // 触发点击事件以更新UI
+                        }
+                    });
+
+                    // 显示结果
+                    currentSeed = seedParam;
+                    initialState.classList.add('hidden');
+                    generateDrawResult(false); // 不显示加载状态直接生成结果
+                    return;
+                }
+            } catch (e) {
+                console.error('解析URL参数失败:', e);
+            }
+        }
+
+        // 默认选中1人
+        playerBtns[0].click();
+
+        // 显示初始状态
+        initialState.classList.remove('hidden');
+    });
 
     // 初始化人数选择按钮
     playerBtns.forEach(btn => {
@@ -301,6 +401,66 @@
         // 清空结果
         countryContainer.innerHTML = '';
         drawnCountries = [];
+        currentSeed = null;
+
+        // 更新URL，移除参数
+        history.pushState({}, document.title, window.location.pathname);
+    });
+
+    // 分享功能
+    shareBtn.addEventListener('click', () => {
+        if (drawnCountries.length === 0 || !currentSeed) return;
+
+        // 生成分享URL
+        const countryIds = drawnCountries.map(c => c.id).join(',');
+        const url = new URL(window.location.href);
+        url.searchParams.set('countries', countryIds);
+        url.searchParams.set('count', selectedPlayerCount);
+        url.searchParams.set('seed', currentSeed);
+
+        // 设置分享链接
+        shareUrl.value = url.toString();
+
+        // 显示分享模态框
+        shareModal.classList.remove('hidden');
+    });
+
+    // 关闭分享模态框
+    closeShareModal.addEventListener('click', () => {
+        shareModal.classList.add('hidden');
+    });
+
+    // 点击模态框外部关闭
+    shareModal.addEventListener('click', (e) => {
+        if (e.target === shareModal) {
+            shareModal.classList.add('hidden');
+        }
+    });
+
+    // 复制链接
+    copyUrlBtn.addEventListener('click', () => {
+        shareUrl.select();
+        document.execCommand('copy');
+
+        // 显示复制成功提示
+        const originalText = copyUrlBtn.innerHTML;
+        copyUrlBtn.innerHTML = '<i class="fa fa-check mr-1"></i> 已复制';
+        copyUrlBtn.classList.add('bg-green-50', 'border-green-200', 'text-green-700');
+
+        setTimeout(() => {
+            copyUrlBtn.innerHTML = originalText;
+            copyUrlBtn.classList.remove('bg-green-50', 'border-green-200', 'text-green-700');
+        }, 2000);
+    });
+
+    // 微信分享（模拟）
+    shareWechatBtn.addEventListener('click', () => {
+        alert('请将链接发送给微信好友，或使用微信扫描二维码分享');
+    });
+
+    // QQ分享（模拟）
+    shareQQBtn.addEventListener('click', () => {
+        alert('请将链接发送给QQ好友');
     });
 
     // 开始抽取函数
@@ -324,6 +484,9 @@
         loadingBar.style.width = '0%';
         loadingText.textContent = `正在随机选择 ${selectedPlayerCount} 个国家...`;
 
+        // 生成新的随机种子
+        currentSeed = generateSeed();
+
         // 模拟加载进度
         const progressSteps = 5;
         const stepDuration = 300;
@@ -345,15 +508,25 @@
                 // 完成加载后生成结果
                 setTimeout(() => {
                     generateDrawResult();
+
+                    // 更新URL参数
+                    const countryIds = drawnCountries.map(c => c.id).join(',');
+                    const url = new URL(window.location.href);
+                    url.searchParams.set('countries', countryIds);
+                    url.searchParams.set('count', selectedPlayerCount);
+                    url.searchParams.set('seed', currentSeed);
+                    history.pushState({}, document.title, url.toString());
                 }, 500);
             }
         }, stepDuration);
     }
 
     // 生成抽取结果
-    function generateDrawResult() {
-        // 从国家库中随机选择指定数量的不同国家
-        drawnCountries = getRandomCountries(selectedPlayerCount);
+    function generateDrawResult(showLoading = true) {
+        if (showLoading) {
+            // 从国家库中随机选择指定数量的不同国家
+            drawnCountries = getRandomCountries(selectedPlayerCount);
+        }
 
         // 更新结果计数
         resultCount.textContent = `共 ${drawnCountries.length} 个国家`;
@@ -368,28 +541,35 @@
             countryCard.className = 'bg-white rounded-xl shadow-md overflow-hidden card-hover animate-slide-up';
             countryCard.style.animationDelay = `${index * 100}ms`;
 
-            // 设置卡片内容
+            // 设置卡片内容，包含图片加载状态
             countryCard.innerHTML = `
           <div class="image-container">
-            <img src="${country.image}" alt="${country.name} 封面图" class="image-cover">
-            <div class="absolute top-3 left-3 bg-primary/80 text-white text-xs font-medium px-2 py-1 rounded">
-              玩家 ${index + 1}
+            <!-- 图片加载指示器 -->
+            <div class="image-loader" id="loader-${index}">
+            <i class="fa fa-circle-o-notch fa-spin text-primary/50"></i>
             </div>
-          </div>
-          <div class="p-4">
+            <img src="${country.image}" alt="${country.name} 封面图"
+            class="image-cover"
+            onload="imageLoaded('loader-${index}', this)"
+            onerror="imageError('loader-${index}', this, '${country.name}')">
+            <div class="absolute top-3 left-3 bg-primary/80 text-white text-xs font-medium px-2 py-1 rounded">
+            玩家 ${index + 1}
+            </div>
+            </div>
+            <div class="p-4">
             <div class="flex items-center justify-between mb-2">
-              <h3 class="font-semibold text-lg flex items-center">
-                ${country.flag} ${country.name}
-              </h3>
-              <span class="text-xs text-gray-400">
-                #${index + 1}
-              </span>
+            <h3 class="font-semibold text-lg flex items-center">
+            ${country.flag} ${country.name}
+            </h3>
+            <span class="text-xs text-gray-400">
+            #${index + 1}
+            </span>
             </div>
             <button class="view-details-btn w-full text-sm text-primary hover:text-primary/80 transition-colors flex items-center justify-center gap-1 py-1">
-              <i class="fa fa-search-plus"></i> 查看详情
+            <i class="fa fa-search-plus"></i> 查看详情
             </button>
-          </div>
-        `;
+            </div>
+            `;
 
             // 添加到容器
             countryContainer.appendChild(countryCard);
@@ -397,8 +577,8 @@
             // 详情按钮事件
             const detailsBtn = countryCard.querySelector('.view-details-btn');
             detailsBtn.addEventListener('click', () => {
-                alert(`${country.flag} ${country.name}\n图片已加载完成，可点击查看大图`);
-                // 实际应用中可在这里实现查看大图功能
+                // 创建大图查看模态框
+                createImageModal(country);
             });
         });
 
@@ -407,16 +587,117 @@
         resultSection.classList.remove('hidden');
     }
 
+    // 图片加载完成处理函数
+    function imageLoaded(loaderId, imageElement) {
+        const loader = document.getElementById(loaderId);
+        if (loader) {
+            // 隐藏加载指示器
+            loader.style.opacity = '0';
+            setTimeout(() => {
+                loader.style.display = 'none';
+            }, 300);
+        }
+        // 标记图片已加载，触发淡入效果
+        imageElement.classList.add('loaded');
+    }
+
+    // 图片加载失败处理函数
+    function imageError(loaderId, imageElement, countryName) {
+        const loader = document.getElementById(loaderId);
+        if (loader) {
+            // 显示错误信息替代加载指示器
+            loader.innerHTML = `<i class="fa fa-exclamation-triangle text-amber-500"></i>`;
+            loader.classList.add('bg-amber-50');
+            }
+        // 显示默认图片或错误提示
+        imageElement.src = `https://picsum.photos/seed/${countryName}/600/400`;
+        imageElement.alt = `${countryName} 图片加载失败`;
+    }
+
+    // 创建图片查看模态框
+    function createImageModal(country) {
+        // 检查是否已存在模态框，若有则移除
+        const existingModal = document.getElementById('imageModal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+
+        // 创建模态框容器
+        const modal = document.createElement('div');
+        modal.id = 'imageModal';
+        modal.className = 'fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 animate-fade-in';
+        modal.innerHTML = `
+            <div class="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] flex flex-col">
+                <div class="p-4 border-b flex justify-between items-center">
+                    <h3 class="font-semibold text-lg flex items-center">
+                        ${country.flag} ${country.name}
+                    </h3>
+                    <button id="closeModal" class="text-gray-500 hover:text-gray-800">
+                        <i class="fa fa-times text-xl"></i>
+                    </button>
+                </div>
+                <div class="flex-grow flex items-center justify-center p-4 bg-gray-100 relative">
+                    <div class="image-loader absolute">
+                        <i class="fa fa-circle-o-notch fa-spin text-primary/50"></i>
+                    </div>
+                    <img src="${country.image}"
+                         alt="${country.name} 大图"
+                         class="max-w-full max-h-[70vh] object-contain rounded opacity-0 transition-opacity duration-300"
+                         onload="this.classList.add('opacity-100'); this.previousElementSibling.style.display='none'"
+                         onerror="this.src='https://picsum.photos/seed/${country.name}/1200/800'; this.classList.add('opacity-100'); this.previousElementSibling.style.display='none'">
+                </div>
+            </div>
+        `;
+
+        // 添加到页面
+        document.body.appendChild(modal);
+        document.body.style.overflow = 'hidden'; // 防止背景滚动
+
+        // 关闭模态框事件
+        const closeBtn = document.getElementById('closeModal');
+        closeBtn.addEventListener('click', () => {
+            modal.remove();
+            document.body.style.overflow = ''; // 恢复滚动
+        });
+
+        // 点击模态框背景关闭
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.remove();
+                document.body.style.overflow = '';
+            }
+        });
+    }
+
+    // 生成随机种子
+    function generateSeed() {
+        return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+    }
+
+    // 基于种子的随机数生成器
+    function seededRandom(seed) {
+        // 简单的线性同余生成器
+        let s = seed % 2147483647;
+        if (s <= 0) s += 2147483646;
+        return function() {
+            s = s * 16807 % 2147483647;
+            return s / 2147483647;
+        };
+    }
+
     // 从国家库中获取指定数量的随机不同国家
     function getRandomCountries(count) {
         // 复制国家库以避免修改原数组
         const countryPool = [...countryDatabase];
         const selectedCountries = [];
 
+        // 创建基于当前种子的随机数生成器
+        const random = seededRandom(currentSeed ? currentSeed.hashCode() : Date.now());
+
         // 随机选择指定数量的国家
         for (let i = 0; i < count && countryPool.length > 0; i++) {
             // 生成随机索引
-            const randomIndex = Math.floor(Math.random() * countryPool.length);
+            const randomIndex = Math.floor(random() * countryPool.length);
 
             // 取出选中的国家并添加到结果中
             selectedCountries.push(countryPool[randomIndex]);
@@ -428,14 +709,16 @@
         return selectedCountries;
     }
 
-    // 页面加载完成后的初始化
-    document.addEventListener('DOMContentLoaded', () => {
-        // 默认选中1人
-        playerBtns[0].click();
-
-        // 显示初始状态
-        initialState.classList.remove('hidden');
-    });
+    // 为字符串添加哈希码方法，用于将种子转换为数字
+    String.prototype.hashCode = function() {
+        let hash = 0;
+        for (let i = 0; i < this.length; i++) {
+            const char = this.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash; // 转换为32位整数
+        }
+        return Math.abs(hash);
+    };
 </script>
 </body>
 </html>
