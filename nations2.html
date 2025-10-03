@@ -51,18 +51,22 @@
             .card-hover {
                 @apply transition-all duration-300 hover:shadow-xl hover:scale-[1.02];
             }
+            /* 1. 关键修改：将图片容器比例从3:2（66.67%）改为4:3（75%），更适合风景图完整显示 */
             .image-container {
                 @apply relative overflow-hidden rounded-t-lg bg-gray-100;
-                padding-top: 66.67%; /* 3:2 图片比例，适合展示国家风景 */
+                padding-top: 75%; /* 4:3 比例（高度=宽度*0.75），避免风景图上下裁剪 */
             }
+            /* 2. 关键修改：图片改为"完整包含"模式（object-contain），确保画面不裁剪 */
             .image-cover {
-                @apply absolute inset-0 w-full h-full object-cover transition-all duration-700 opacity-0;
+                @apply absolute inset-0 w-full h-full object-contain transition-all duration-700 opacity-0;
+                background-color: #f3f4f6; /* 图片未填满区域用浅灰背景过渡，避免空白突兀 */
             }
             .image-cover.loaded {
                 @apply opacity-100;
             }
+            /* 3. 优化 hover 效果：缩放幅度减小，避免过度裁剪 */
             .card-link:hover .image-cover {
-                @apply scale-110;
+                @apply scale-105; /* 从scale-110改为scale-105，减少缩放导致的边缘裁剪 */
             }
             .btn-primary {
                 @apply bg-primary hover:bg-primary/90 text-white font-medium py-3 px-6 rounded-lg transition-all duration-300 flex items-center justify-center gap-2 shadow-md hover:shadow-lg;
@@ -174,7 +178,7 @@
                     <div class="text-xs text-gray-500">支持人数</div>
                 </div>
                 <div class="bg-gray-100 rounded-lg p-3 text-center text-sm">
-                    <div class="font-medium">3:2</div>
+                    <div class="font-medium">4:3</div> <!-- 更新比例提示 -->
                     <div class="text-xs text-gray-500">图片比例</div>
                 </div>
                 <div class="bg-gray-100 rounded-lg p-3 text-center text-sm">
@@ -587,34 +591,36 @@
         resultSection.classList.remove('hidden');
     }
 
-    // 图片加载完成处理函数
-    function imageLoaded(loaderId, imageElement) {
-        const loader = document.getElementById(loaderId);
-        if (loader) {
-            // 隐藏加载指示器
-            loader.style.opacity = '0';
-            setTimeout(() => {
-                loader.style.display = 'none';
-            }, 300);
-        }
-        // 标记图片已加载，触发淡入效果
-        imageElement.classList.add('loaded');
-    }
-
-    // 图片加载失败处理函数
-    function imageError(loaderId, imageElement, countryName) {
-        const loader = document.getElementById(loaderId);
-        if (loader) {
-            // 显示错误信息替代加载指示器
-            loader.innerHTML = `<i class="fa fa-exclamation-triangle text-amber-500"></i>`;
-            loader.classList.add('bg-amber-50');
+        // 图片加载完成处理函数（优化：确保加载后立即添加loaded类）
+        function imageLoaded(loaderId, imageElement) {
+            const loader = document.getElementById(loaderId);
+            if (loader) {
+                // 平滑隐藏加载指示器
+                loader.style.transition = 'opacity 0.3s ease';
+                loader.style.opacity = '0';
+                setTimeout(() => {
+                    loader.style.display = 'none';
+                }, 300);
             }
-        // 显示默认图片或错误提示
-        imageElement.src = `https://picsum.photos/seed/${countryName}/600/400`;
-        imageElement.alt = `${countryName} 图片加载失败`;
-    }
+            // 立即标记图片为已加载，触发显示动画
+            imageElement.classList.add('loaded');
+        }
 
-    // 创建图片查看模态框
+        // 图片加载失败处理函数（优化：失败时也用contain模式）
+        function imageError(loaderId, imageElement, countryName) {
+            const loader = document.getElementById(loaderId);
+            if (loader) {
+                // 显示错误信息替代加载指示器
+                loader.innerHTML = `<i class="fa fa-exclamation-triangle text-amber-500"></i>`;
+                loader.classList.add('bg-amber-50');
+            }
+            // 失败图也用contain模式，保持显示一致性
+            imageElement.src = `https://picsum.photos/seed/${countryName}/600/450`; // 4:3比例的备用图
+            imageElement.alt = `${countryName} 图片加载失败`;
+            imageElement.classList.add('loaded'); // 强制显示备用图
+        }
+
+    // 创建图片查看模态框（优化大图显示）
     function createImageModal(country) {
         // 检查是否已存在模态框，若有则移除
         const existingModal = document.getElementById('imageModal');
@@ -640,11 +646,12 @@
                     <div class="image-loader absolute">
                         <i class="fa fa-circle-o-notch fa-spin text-primary/50"></i>
                     </div>
+                    <!-- 大图也用contain模式，确保完整显示 -->
                     <img src="${country.image}"
                          alt="${country.name} 大图"
                          class="max-w-full max-h-[70vh] object-contain rounded opacity-0 transition-opacity duration-300"
-                         onload="this.classList.add('opacity-100'); this.previousElementSibling.style.display='none'"
-                         onerror="this.src='https://picsum.photos/seed/${country.name}/1200/800'; this.classList.add('opacity-100'); this.previousElementSibling.style.display='none'">
+                         onload="this.classList.add('opacity-100'); this.previousElementSibling.style.opacity=0; setTimeout(()=>this.previousElementSibling.style.display='none',300)"
+                         onerror="this.src='https://picsum.photos/seed/${country.name}/1200/900'; this.classList.add('opacity-100'); this.previousElementSibling.style.opacity=0; setTimeout(()=>this.previousElementSibling.style.display='none',300)">
                 </div>
             </div>
         `;
@@ -669,56 +676,56 @@
         });
     }
 
-    // 生成随机种子
-    function generateSeed() {
-        return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
-    }
+        // 生成随机种子
+        function generateSeed() {
+            return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+        }
 
-    // 基于种子的随机数生成器
-    function seededRandom(seed) {
-        // 简单的线性同余生成器
-        let s = seed % 2147483647;
-        if (s <= 0) s += 2147483646;
-        return function() {
-            s = s * 16807 % 2147483647;
-            return s / 2147483647;
+        // 基于种子的随机数生成器
+        function seededRandom(seed) {
+            // 简单的线性同余生成器
+            let s = seed % 2147483647;
+            if (s <= 0) s += 2147483646;
+            return function() {
+                s = s * 16807 % 2147483647;
+                return s / 2147483647;
+            };
+        }
+
+        // 从国家库中获取指定数量的随机不同国家
+        function getRandomCountries(count) {
+            // 复制国家库以避免修改原数组
+            const countryPool = [...countryDatabase];
+            const selectedCountries = [];
+
+            // 创建基于当前种子的随机数生成器
+            const random = seededRandom(currentSeed ? currentSeed.hashCode() : Date.now());
+
+            // 随机选择指定数量的国家
+            for (let i = 0; i < count && countryPool.length > 0; i++) {
+                // 生成随机索引
+                const randomIndex = Math.floor(random() * countryPool.length);
+
+                // 取出选中的国家并添加到结果中
+                selectedCountries.push(countryPool[randomIndex]);
+
+                // 从池中移除已选中的国家（避免重复）
+                countryPool.splice(randomIndex, 1);
+            }
+
+            return selectedCountries;
+        }
+
+        // 为字符串添加哈希码方法，用于将种子转换为数字
+        String.prototype.hashCode = function() {
+            let hash = 0;
+            for (let i = 0; i < this.length; i++) {
+                const char = this.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash; // 转换为32位整数
+            }
+            return Math.abs(hash);
         };
-    }
-
-    // 从国家库中获取指定数量的随机不同国家
-    function getRandomCountries(count) {
-        // 复制国家库以避免修改原数组
-        const countryPool = [...countryDatabase];
-        const selectedCountries = [];
-
-        // 创建基于当前种子的随机数生成器
-        const random = seededRandom(currentSeed ? currentSeed.hashCode() : Date.now());
-
-        // 随机选择指定数量的国家
-        for (let i = 0; i < count && countryPool.length > 0; i++) {
-            // 生成随机索引
-            const randomIndex = Math.floor(random() * countryPool.length);
-
-            // 取出选中的国家并添加到结果中
-            selectedCountries.push(countryPool[randomIndex]);
-
-            // 从池中移除已选中的国家（避免重复）
-            countryPool.splice(randomIndex, 1);
-        }
-
-        return selectedCountries;
-    }
-
-    // 为字符串添加哈希码方法，用于将种子转换为数字
-    String.prototype.hashCode = function() {
-        let hash = 0;
-        for (let i = 0; i < this.length; i++) {
-            const char = this.charCodeAt(i);
-            hash = ((hash << 5) - hash) + char;
-            hash = hash & hash; // 转换为32位整数
-        }
-        return Math.abs(hash);
-    };
 </script>
 </body>
 </html>
