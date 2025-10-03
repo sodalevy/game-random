@@ -1,138 +1,396 @@
 <!DOCTYPE html>
-<html lang="en">
-<style>
-    body {
-        font-family: Arial, sans-serif;
-        padding: 20px;
-    }
-
-    #countrySelection {
-        margin: 20px 0;
-    }
-
-    #result {
-        margin-top: 20px;
-    }
-
-    #result img {
-        width: 90%;
-        max-width: 250px;
-        height: auto;
-        margin-top: 5px;
-    }
-
-    @media (max-width: 768px) {
-        #result img {
-            max-width: 200px;
-        }
-    }
-</style>
-
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>国家分配</title>
-</head>
+    <title>国家选择与展示</title>
+    <!-- 引入Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入Font Awesome -->
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
 
-<body>
-<!-- 选择玩家数量的单选按钮 -->
-<div id="playerCount">
-    <input type="radio" name="playerCount" value="1"> 1 player<br>
-    <input type="radio" name="playerCount" value="2"> 2 players<br>
-    <input type="radio" name="playerCount" value="3"> 3 players<br>
-    <input type="radio" name="playerCount" checked value="4"> 4 players<br>
-    <input type="radio" name="playerCount" value="5"> 5 players
-</div>
-<!-- 选择国家的多选框 -->
-<div id="countrySelection">
-    <input type="checkbox" id="selectAll" onclick="toggleSelectAll()"> 全部
-    <input type="checkbox" name="country" value="中国" data-image="https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/china.jpg"> 中国
-    <input type="checkbox" name="country" value="美国" data-image="https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/america.jpg"> 美国
-    <input type="checkbox" name="country" value="埃塞俄比亚" data-image="https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/ethiopia.jpg"> 埃塞俄比亚
-    <input type="checkbox" name="country" value="印度" data-image="https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/india.jpg"> 印度
-    <input type="checkbox" name="country" value="日本" data-image="https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/japan.jpg"> 日本
-    <input type="checkbox" name="country" value="韩国" data-image="https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/korea.jpg"> 韩国
-    <input type="checkbox" name="country" value="马里" data-image="https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/mali.jpg"> 马里
-    <input type="checkbox" name="country" value="蒙古国" data-image="https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/mongolia.jpg"> 蒙古国
-    <input type="checkbox" name="country" value="波兰" data-image="https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/poland.jpg"> 波兰
-    <input type="checkbox" name="country" value="葡萄牙" data-image="https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/portugal.jpg"> 葡萄牙
-    <input type="checkbox" name="country" value="罗马" data-image="https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/rome.jpg"> 罗马
-    <input type="checkbox" name="country" value="维京" data-image="https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/vikings.jpg"> 维京
-    <input type="checkbox" name="country" value="波斯" data-image="https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/persia.jpg"> 波斯
-    <input type="checkbox" name="country" value="埃及" data-image="https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/egypt.jpg"> 埃及
-    <input type="checkbox" name="country" value="威尼斯" data-image="https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/venice.jpg"> 威尼斯
-    <input type="checkbox" name="country" value="阿拉伯" data-image="https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/arab.jpg"> 阿拉伯
-    <input type="checkbox" name="country" value="希腊" data-image="https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/greece.jpg"> 希腊
-</div>
-<!-- 抽取按钮 -->
-<button id="drawButton" onclick="drawCountries()">抽取</button>
-<!-- 显示结果的容器 -->
-<div id="result"></div>
-
-<script>
-    window.addEventListener('DOMContentLoaded', function() {
-        // 默认选中所有国家选项
-        const countryCheckboxes = document.querySelectorAll('input[name="country"]');
-        countryCheckboxes.forEach(checkbox => {
-            checkbox.checked = true;
-        });
-
-        // 选中"全选"复选框
-        document.getElementById('selectAll').checked = true;
-    });
-
-    // 全选功能函数
-    function toggleSelectAll() {
-        const selectAllCheckbox = document.getElementById('selectAll');
-        const countryCheckboxes = document.querySelectorAll('input[name="country"]');
-        countryCheckboxes.forEach(checkbox => {
-            checkbox.checked = selectAllCheckbox.checked;
-        });
-    }
-
-    // 抽取国家并分配给玩家的函数
-    function drawCountries() {
-        // 获取玩家数量
-        const playerCountRadios = document.querySelectorAll('input[name="playerCount"]:checked');
-        if (playerCountRadios.length === 0) {
-            alert('请选择玩家数量');
-            return;
-        }
-        const playerCount = parseInt(playerCountRadios[0].value);
-        // 获取所有选中的国家复选框
-        const selectedCountries = Array.from(document.querySelectorAll('input[name="country"]:checked')).map(checkbox => ({
-            name: checkbox.value,
-            image: checkbox.dataset.image
-        }));
-
-        // 检查是否有选中的国家
-        if (selectedCountries.length === 0) {
-            alert('请至少选择一个国家');
-            return;
-        }
-
-        // 打乱选中国家的顺序
-        const shuffledCountries = selectedCountries.sort(() => Math.random() - 0.5);
-        const resultDiv = document.getElementById('result');
-        resultDiv.innerHTML = '';
-
-        // 分配国家给玩家
-        for (let i = 0; i < playerCount; i++) {
-            if (i < shuffledCountries.length) {
-                const country = shuffledCountries[i];
-                const playerResult = document.createElement('div');
-                playerResult.innerHTML = `${i + 1} player: ${country.name}<br><img src="${country.image}" alt="${country.name}">`;
-                resultDiv.appendChild(playerResult);
-            } else {
-                const playerResult = document.createElement('div');
-                playerResult.textContent = `${i + 1} player: 无可用国家`;
-                resultDiv.appendChild(playerResult);
+    <!-- 配置Tailwind -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#64748B',
+                        accent: '#10B981',
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                },
             }
         }
+    </script>
+
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .checkbox-custom:checked + label {
+                @apply border-primary bg-primary/10 text-primary;
+            }
+            .checkbox-custom:checked + label::after {
+                content: '\f00c';
+                @apply absolute right-3 top-1/2 -translate-y-1/2 text-primary;
+                font-family: 'FontAwesome';
+            }
+            .country-card {
+                @apply bg-white rounded-xl overflow-hidden shadow-md transition-all duration-300 hover:shadow-xl hover:-translate-y-1;
+            }
+            .image-zoom {
+                @apply transition-transform duration-700;
+            }
+            .country-card:hover .image-zoom {
+                @apply scale-110;
+            }
+        }
+    </style>
+</head>
+<body class="font-inter bg-gray-50 text-gray-800 min-h-screen">
+<div class="container mx-auto px-4 py-8 max-w-7xl">
+    <!-- 页面标题 -->
+    <header class="mb-8 text-center">
+        <h1 class="text-[clamp(1.8rem,4vw,2.5rem)] font-bold text-gray-800 mb-2 flex items-center justify-center">
+            <i class="fa fa-globe text-primary mr-3"></i>国家选择器
+        </h1>
+        <p class="text-gray-500 max-w-2xl mx-auto">选择您感兴趣的国家，或随机抽取指定数量的国家进行展示</p>
+    </header>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- 左侧：国家选择区域 -->
+        <div class="lg:col-span-1">
+            <div class="bg-white rounded-xl shadow-sm p-6 sticky top-4">
+                <h2 class="text-xl font-semibold mb-4 flex items-center">
+                    <i class="fa fa-check-square-o text-primary mr-2"></i>选择国家
+                </h2>
+
+                <div class="mb-6">
+                    <p class="text-sm text-gray-500 mb-3">从以下17个国家中选择（可多选）：</p>
+
+                    <!-- 国家复选框列表（将通过JS动态生成） -->
+                    <div id="countryCheckboxes" class="space-y-3 max-h-[400px] overflow-y-auto pr-2">
+                        <!-- JS将在这里生成复选框 -->
+                    </div>
+                </div>
+
+                <!-- 随机抽取设置 -->
+                <div class="border-t pt-5 mt-5">
+                    <h3 class="font-medium mb-3 flex items-center">
+                        <i class="fa fa-random text-primary mr-2"></i>随机抽取
+                    </h3>
+
+                    <div class="mb-4">
+                        <label class="block text-sm text-gray-600 mb-2">抽取数量 (1-5)</label>
+                        <div class="flex gap-2 flex-wrap">
+                            <button class="draw-count-btn px-3 py-1.5 border rounded-md text-sm hover:border-primary hover:text-primary transition-colors" data-count="1">1个</button>
+                            <button class="draw-count-btn px-3 py-1.5 border rounded-md text-sm hover:border-primary hover:text-primary transition-colors" data-count="2">2个</button>
+                            <button class="draw-count-btn px-3 py-1.5 border rounded-md text-sm hover:border-primary hover:text-primary transition-colors" data-count="3">3个</button>
+                            <button class="draw-count-btn px-3 py-1.5 border rounded-md text-sm hover:border-primary hover:text-primary transition-colors" data-count="4">4个</button>
+                            <button class="draw-count-btn px-3 py-1.5 border rounded-md text-sm hover:border-primary hover:text-primary transition-colors" data-count="5">5个</button>
+                        </div>
+                    </div>
+
+                    <button id="drawRandomBtn" class="w-full bg-primary hover:bg-primary/90 text-white font-medium py-2.5 px-4 rounded-lg transition-colors flex items-center justify-center gap-2">
+                        <i class="fa fa-random"></i> 随机抽取国家
+                    </button>
+                </div>
+
+                <!-- 操作按钮 -->
+                <div class="flex gap-3 mt-5">
+                    <button id="selectAllBtn" class="flex-1 border border-primary text-primary hover:bg-primary/5 font-medium py-2 px-4 rounded-lg transition-colors">
+                        全选
+                    </button>
+                    <button id="deselectAllBtn" class="flex-1 border border-gray-300 hover:border-gray-400 font-medium py-2 px-4 rounded-lg transition-colors">
+                        取消全选
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右侧：展示区域 -->
+        <div class="lg:col-span-2">
+            <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-semibold flex items-center">
+                        <i class="fa fa-th text-primary mr-2"></i>已选国家
+                    </h2>
+                    <span id="selectedCount" class="bg-gray-100 text-gray-600 text-sm px-3 py-1 rounded-full">
+              已选择 <span class="font-medium text-primary">0</span> 个国家
+            </span>
+                </div>
+
+                <!-- 空状态 -->
+                <div id="emptyState" class="text-center py-16">
+                    <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fa fa-globe text-gray-400 text-3xl"></i>
+                    </div>
+                    <h3 class="text-lg font-medium text-gray-700 mb-2">暂无选中的国家</h3>
+                    <p class="text-gray-500 max-w-md mx-auto">请在左侧选择国家或使用随机抽取功能</p>
+                </div>
+
+                <!-- 国家展示网格 -->
+                <div id="countryGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-5 hidden">
+                    <!-- 国家卡片将通过JS动态生成 -->
+                </div>
+
+                <!-- 加载状态 -->
+                <div id="loadingState" class="hidden text-center py-16">
+                    <i class="fa fa-circle-o-notch fa-spin text-primary text-3xl mb-4"></i>
+                    <p class="text-gray-500">正在加载...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<footer class="bg-gray-800 text-gray-300 mt-12 py-6">
+    <div class="container mx-auto px-4 text-center text-sm">
+        <p>国家选择与展示工具 &copy; 2023</p>
+    </div>
+</footer>
+
+<script>
+    // 国家数据配置 - 统一管理所有国家信息
+    const countryData = [
+        { name: "中国", image: "https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/china.jpg", flag: "🇨🇳" },
+        { name: "美国", image: "https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/america.jpg", flag: "🇺🇸" },
+        { name: "埃塞俄比亚", image: "https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/ethiopia.jpg", flag: "🇪🇹" },
+        { name: "印度", image: "https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/india.jpg", flag: "🇮🇳" },
+        { name: "日本", image: "https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/japan.jpg", flag: "🇯🇵" },
+        { name: "韩国", image: "https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/korea.jpg", flag: "🇰🇷" },
+        { name: "马里", image: "https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/mali.jpg", flag: "🇲🇱" },
+        { name: "蒙古国", image: "https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/mongolia.jpg", flag: "🇲🇳" },
+        { name: "波兰", image: "https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/poland.jpg", flag: "🇵🇱" },
+        { name: "葡萄牙", image: "https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/portugal.jpg", flag: "🇵🇹" },
+        { name: "罗马", image: "https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/rome.jpg", flag: "🇮🇹" },
+        { name: "维京", image: "https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/vikings.jpg", flag: "🇳🇴" },
+        { name: "波斯", image: "https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/persia.jpg", flag: "🇮🇷" },
+        { name: "埃及", image: "https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/egypt.jpg", flag: "🇪🇬" },
+        { name: "威尼斯", image: "https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/venice.jpg", flag: "🇮🇹" },
+        { name: "阿拉伯", image: "https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/arab.jpg", flag: "🇦🇪" },
+        { name: "希腊", image: "https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/greece.jpg", flag: "🇬🇷" }
+    ];
+
+    // DOM元素
+    const countryCheckboxes = document.getElementById('countryCheckboxes');
+    const selectedCountEl = document.querySelector('#selectedCount .text-primary');
+    const countryGrid = document.getElementById('countryGrid');
+    const emptyState = document.getElementById('emptyState');
+    const loadingState = document.getElementById('loadingState');
+    const selectAllBtn = document.getElementById('selectAllBtn');
+    const deselectAllBtn = document.getElementById('deselectAllBtn');
+    const drawRandomBtn = document.getElementById('drawRandomBtn');
+    const drawCountBtns = document.querySelectorAll('.draw-count-btn');
+
+    // 状态变量
+    let selectedDrawCount = 1;
+
+    // 初始化事件监听和页面元素
+    function init() {
+        // 动态生成国家复选框
+        generateCountryCheckboxes();
+
+        // 获取所有生成的复选框
+        const checkboxes = document.querySelectorAll('input[name="country"]');
+
+        // 复选框变化事件
+        checkboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', () => {
+                updateSelectedCountries(checkboxes);
+            });
+        });
+
+        // 全选按钮
+        selectAllBtn.addEventListener('click', () => {
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = true;
+            });
+            updateSelectedCountries(checkboxes);
+        });
+
+        // 取消全选按钮
+        deselectAllBtn.addEventListener('click', () => {
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = false;
+            });
+            updateSelectedCountries(checkboxes);
+        });
+
+        // 抽取数量选择
+        drawCountBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                // 移除其他按钮的选中状态
+                drawCountBtns.forEach(b => {
+                    b.classList.remove('bg-primary', 'text-white', 'border-primary');
+                });
+
+                // 设置当前按钮为选中状态
+                btn.classList.add('bg-primary', 'text-white', 'border-primary');
+
+                // 更新选中的数量
+                selectedDrawCount = parseInt(btn.dataset.count);
+            });
+        });
+
+        // 默认选中1个
+        drawCountBtns[0].click();
+
+        // 随机抽取按钮
+        drawRandomBtn.addEventListener('click', () => {
+            drawRandomCountries(checkboxes);
+        });
     }
+
+    // 动态生成国家复选框
+    function generateCountryCheckboxes() {
+        countryCheckboxes.innerHTML = '';
+
+        countryData.forEach(country => {
+            const checkboxContainer = document.createElement('div');
+            checkboxContainer.className = 'relative';
+
+            // 为每个国家创建唯一ID
+            const countryId = `country-${country.name.replace(/\s+/g, '-').toLowerCase()}`;
+
+            checkboxContainer.innerHTML = `
+          <input type="checkbox" name="country" id="${countryId}" value="${country.name}"
+            data-image="${country.image}"
+            data-flag="${country.flag}"
+            class="checkbox-custom absolute opacity-0 w-0 h-0">
+          <label for="${countryId}" class="block pl-10 pr-8 py-3 border rounded-lg cursor-pointer relative transition-colors">
+            <span class="mr-2">${country.flag}</span>${country.name}
+          </label>
+        `;
+
+            countryCheckboxes.appendChild(checkboxContainer);
+        });
+    }
+
+    // 更新选中的国家并展示
+    function updateSelectedCountries(checkboxes) {
+        // 获取所有选中的国家
+        const selectedCountries = Array.from(checkboxes)
+            .filter(checkbox => checkbox.checked)
+            .map(checkbox => ({
+                name: checkbox.value,
+                image: checkbox.dataset.image,
+                flag: checkbox.dataset.flag
+            }));
+
+        // 更新计数
+        selectedCountEl.textContent = selectedCountries.length;
+
+        // 显示空状态或国家网格
+        if (selectedCountries.length === 0) {
+            emptyState.classList.remove('hidden');
+            countryGrid.classList.add('hidden');
+        } else {
+            emptyState.classList.add('hidden');
+            countryGrid.classList.remove('hidden');
+
+            // 清空网格
+            countryGrid.innerHTML = '';
+
+            // 添加国家卡片
+            selectedCountries.forEach((country, index) => {
+                const card = createCountryCard(country, index);
+                countryGrid.appendChild(card);
+            });
+        }
+    }
+
+    // 创建国家卡片
+    function createCountryCard(country, index) {
+        const card = document.createElement('div');
+        card.className = 'country-card animate-fadeIn';
+        card.style.animationDelay = `${index * 100}ms`;
+
+        card.innerHTML = `
+        <div class="relative h-48 overflow-hidden">
+          <img src="${country.image}" alt="${country.name}" class="w-full h-full object-cover image-zoom">
+          <button class="remove-btn absolute top-3 right-3 bg-white/80 hover:bg-white text-gray-700 rounded-full w-8 h-8 flex items-center justify-center transition-colors">
+            <i class="fa fa-times"></i>
+          </button>
+          <div class="absolute top-3 left-3 bg-primary/80 text-white text-sm font-medium px-2 py-1 rounded flex items-center">
+            ${country.flag}
+          </div>
+        </div>
+        <div class="p-4">
+          <h3 class="font-semibold text-lg flex items-center">
+            ${country.flag} ${country.name}
+          </h3>
+        </div>
+      `;
+
+        // 移除按钮事件
+        const removeBtn = card.querySelector('.remove-btn');
+        removeBtn.addEventListener('click', () => {
+            // 找到对应的复选框并取消选中
+            const checkboxes = document.querySelectorAll('input[name="country"]');
+            const checkbox = Array.from(checkboxes).find(
+                cb => cb.value === country.name
+            );
+            if (checkbox) {
+                checkbox.checked = false;
+                updateSelectedCountries(checkboxes);
+            }
+        });
+
+        return card;
+    }
+
+    // 随机抽取国家
+    function drawRandomCountries(checkboxes) {
+        // 先取消所有选中状态
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = false;
+        });
+
+        // 显示加载状态
+        emptyState.classList.add('hidden');
+        countryGrid.classList.add('hidden');
+        loadingState.classList.remove('hidden');
+
+        // 模拟加载延迟
+        setTimeout(() => {
+            // 将所有国家转为数组并随机排序
+            const shuffled = [...checkboxes].sort(() => 0.5 - Math.random());
+
+            // 选择前N个国家
+            const selected = shuffled.slice(0, selectedDrawCount);
+
+            // 选中这些国家
+            selected.forEach(checkbox => {
+                checkbox.checked = true;
+            });
+
+            // 隐藏加载状态并更新展示
+            loadingState.classList.add('hidden');
+            updateSelectedCountries(checkboxes);
+        }, 800);
+    }
+
+    // 添加动画样式
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      .animate-fadeIn {
+        animation: fadeIn 0.3s ease-out forwards;
+      }
+    `;
+    document.head.appendChild(style);
+
+    // 页面加载完成后初始化
+    document.addEventListener('DOMContentLoaded', init);
 </script>
 </body>
-
-
-
 </html>
