@@ -1,131 +1,181 @@
 <!DOCTYPE html>
-<html lang="en">
-<style>
-    body {
-        font-family: Arial, sans-serif;
-        padding: 20px;
-    }
-
-    #countrySelection {
-        margin: 20px 0;
-    }
-
-    #result {
-        margin-top: 20px;
-    }
-
-    #result img {
-        width: 350px;
-        height: auto;
-        margin-top: 5px;
-    }
-</style>
-
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>国家分配</title>
-</head>
+    <title>桌游列表</title>
+    <!-- 引入Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入Font Awesome -->
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
 
-<body>
-<!-- 选择玩家数量的单选按钮 -->
-<div id="playerCount">
-    <input type="radio" name="playerCount" value="1"> 1 player<br>
-    <input type="radio" name="playerCount" value="2"> 2 players<br>
-    <input type="radio" name="playerCount" value="3"> 3 players<br>
-    <input type="radio" name="playerCount" checked value="4"> 4 players<br>
-    <input type="radio" name="playerCount" value="5"> 5 players
-</div>
-<!-- 选择国家的多选框 -->
-<div id="countrySelection">
-    <input type="checkbox" id="selectAll" onclick="toggleSelectAll()"> 全部
-    <input type="checkbox" name="country" value="中国" data-image="https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/china.jpg"> 中国
-    <input type="checkbox" name="country" value="美国" data-image="https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/america.jpg"> 美国
-    <input type="checkbox" name="country" value="埃塞俄比亚" data-image="https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/ethiopia.jpg"> 埃塞俄比亚
-    <input type="checkbox" name="country" value="印度" data-image="https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/india.jpg"> 印度
-    <input type="checkbox" name="country" value="日本" data-image="https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/japan.jpg"> 日本
-    <input type="checkbox" name="country" value="韩国" data-image="https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/korea.jpg"> 韩国
-    <input type="checkbox" name="country" value="马里" data-image="https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/mali.jpg"> 马里
-    <input type="checkbox" name="country" value="蒙古国" data-image="https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/mongolia.jpg"> 蒙古国
-    <input type="checkbox" name="country" value="波兰" data-image="https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/poland.jpg"> 波兰
-    <input type="checkbox" name="country" value="葡萄牙" data-image="https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/portugal.jpg"> 葡萄牙
-    <input type="checkbox" name="country" value="罗马" data-image="https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/rome.jpg"> 罗马
-    <input type="checkbox" name="country" value="维京" data-image="https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/vikings.jpg"> 维京
-    <input type="checkbox" name="country" value="波斯" data-image="https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/persia.jpg"> 波斯
-    <input type="checkbox" name="country" value="埃及" data-image="https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/egypt.jpg"> 埃及
-    <input type="checkbox" name="country" value="威尼斯" data-image="https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/venice.jpg"> 威尼斯
-    <input type="checkbox" name="country" value="阿拉伯" data-image="https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/arab.jpg"> 阿拉伯
-    <input type="checkbox" name="country" value="希腊" data-image="https://game-random.oss-cn-guangzhou.aliyuncs.com/doc/greece.jpg"> 希腊
-</div>
-<!-- 抽取按钮 -->
-<button id="drawButton" onclick="drawCountries()">抽取</button>
-<!-- 显示结果的容器 -->
-<div id="result"></div>
-
-<script>
-    window.addEventListener('DOMContentLoaded', function() {
-        // 默认选中所有国家选项
-        const countryCheckboxes = document.querySelectorAll('input[name="country"]');
-        countryCheckboxes.forEach(checkbox => {
-            checkbox.checked = true;
-        });
-
-        // 选中"全选"复选框
-        document.getElementById('selectAll').checked = true;
-    });
-
-    // 全选功能函数
-    function toggleSelectAll() {
-        const selectAllCheckbox = document.getElementById('selectAll');
-        const countryCheckboxes = document.querySelectorAll('input[name="country"]');
-        countryCheckboxes.forEach(checkbox => {
-            checkbox.checked = selectAllCheckbox.checked;
-        });
-    }
-
-    // 抽取国家并分配给玩家的函数
-    function drawCountries() {
-        // 获取玩家数量
-        const playerCountRadios = document.querySelectorAll('input[name="playerCount"]:checked');
-        if (playerCountRadios.length === 0) {
-            alert('请选择玩家数量');
-            return;
-        }
-        const playerCount = parseInt(playerCountRadios[0].value);
-        // 获取所有选中的国家复选框
-        const selectedCountries = Array.from(document.querySelectorAll('input[name="country"]:checked')).map(checkbox => ({
-            name: checkbox.value,
-            image: checkbox.dataset.image
-        }));
-
-        // 检查是否有选中的国家
-        if (selectedCountries.length === 0) {
-            alert('请至少选择一个国家');
-            return;
-        }
-
-        // 打乱选中国家的顺序
-        const shuffledCountries = selectedCountries.sort(() => Math.random() - 0.5);
-        const resultDiv = document.getElementById('result');
-        resultDiv.innerHTML = '';
-
-        // 分配国家给玩家
-        for (let i = 0; i < playerCount; i++) {
-            if (i < shuffledCountries.length) {
-                const country = shuffledCountries[i];
-                const playerResult = document.createElement('div');
-                playerResult.innerHTML = `${i + 1} player: ${country.name}<br><img src="${country.image}" alt="${country.name}">`;
-                resultDiv.appendChild(playerResult);
-            } else {
-                const playerResult = document.createElement('div');
-                playerResult.textContent = `${i + 1} player: 无可用国家`;
-                resultDiv.appendChild(playerResult);
+    <!-- 配置Tailwind -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#165DFF',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                },
             }
         }
+    </script>
+
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .card-shadow {
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            }
+            .card-hover {
+                transition: all 0.3s ease;
+            }
+            .card-hover:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+            }
+            .img-zoom {
+                transition: transform 0.5s ease;
+            }
+            .card-link:hover .img-zoom {
+                transform: scale(1.05);
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans">
+<div class="container mx-auto px-4 py-8">
+    <header class="mb-10 text-center">
+        <h1 class="text-[clamp(1.8rem,4vw,2.5rem)] font-bold text-gray-800 mb-2">桌游列表</h1>
+        <p class="text-gray-500 max-w-2xl mx-auto"></p>
+    </header>
+
+    <!-- 列表容器 -->
+    <div id="listContainer" class="grid gap-6"></div>
+
+    <!-- 加载状态 -->
+    <div id="loading" class="hidden py-10 text-center">
+        <i class="fa fa-circle-o-notch fa-spin text-primary text-2xl"></i>
+        <p class="mt-2 text-gray-500">加载中...</p>
+    </div>
+</div>
+
+<script>
+    // 配置项 - 在这里修改列数和列表内容
+    const config = {
+        // 响应式列数配置
+        columns: {
+            default: 1,    // 移动端默认列数
+            sm: 2,         // 小屏幕(640px以上)列数
+            md: 3,         // 中等屏幕(768px以上)列数
+            lg: 4,         // 大屏幕(1024px以上)列数
+            xl: 5          // 超大屏幕(1280px以上)列数
+        },
+
+        // 列表数据 - 封面图、标题、跳转链接
+        items: [
+            {
+                image: "https://oss.gstonegames.com/static/image/gameimgEh/pic1591406_md1506674043096.png",
+                title: "国家们（众国）",
+                url: "nations.html"
+            },
+            {
+                image: "https://oss.gstonegames.com/static/image/gameimgZh/202508/c_5412731936571_3bae8fde.jpg",
+                title: "盖亚计划",
+                url: "gaia.html"
+            }
+        ]
+    };
+
+    // 初始化列表
+    function initList() {
+        const listContainer = document.getElementById('listContainer');
+        const loading = document.getElementById('loading');
+
+        // 显示加载状态
+        loading.classList.remove('hidden');
+        listContainer.classList.add('hidden');
+
+        // 模拟加载延迟
+        setTimeout(() => {
+            // 设置网格列数
+            let columnClasses = '';
+            for (const [breakpoint, columns] of Object.entries(config.columns)) {
+                columnClasses += `${breakpoint ? breakpoint + ':' : ''}grid-cols-${columns} `;
+            }
+            listContainer.className = `grid gap-6 ${columnClasses.trim()}`;
+
+            // 生成列表项
+            config.items.forEach(item => {
+                const listItem = document.createElement('div');
+                listItem.className = 'bg-white rounded-xl overflow-hidden card-shadow card-hover';
+                listItem.innerHTML = `
+            <a href="${item.url}" class="card-link block" target="_blank" rel="noopener noreferrer">
+              <div class="relative h-48 overflow-hidden">
+                <img src="${item.image}" alt="${item.title}" class="w-full h-full object-cover img-zoom">
+              </div>
+              <div class="p-4">
+                <h3 class="font-medium text-gray-800 line-clamp-2">${item.title}</h3>
+              </div>
+            </a>
+          `;
+                listContainer.appendChild(listItem);
+            });
+
+            // 隐藏加载状态，显示列表
+            loading.classList.add('hidden');
+            listContainer.classList.remove('hidden');
+        }, 800);
     }
+
+    // 添加新项的函数
+    function addItems(newItems) {
+        const listContainer = document.getElementById('listContainer');
+
+        newItems.forEach(item => {
+            const listItem = document.createElement('div');
+            listItem.className = 'bg-white rounded-xl overflow-hidden card-shadow card-hover';
+            listItem.innerHTML = `
+          <a href="${item.url}" class="card-link block" target="_blank" rel="noopener noreferrer">
+            <div class="relative h-48 overflow-hidden">
+              <img src="${item.image}" alt="${item.title}" class="w-full h-full object-cover img-zoom">
+            </div>
+            <div class="p-4">
+              <h3 class="font-medium text-gray-800 line-clamp-2">${item.title}</h3>
+            </div>
+          </a>
+        `;
+            // 添加淡入动画
+            listItem.style.opacity = '0';
+            listItem.style.transform = 'translateY(20px)';
+            listItem.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+            listContainer.appendChild(listItem);
+
+            // 触发动画
+            setTimeout(() => {
+                listItem.style.opacity = '1';
+                listItem.style.transform = 'translateY(0)';
+            }, 50);
+        });
+    }
+
+    // 页面加载完成后初始化列表
+    document.addEventListener('DOMContentLoaded', initList);
+
+    // 示例：5秒后自动添加新项（实际应用中可根据需求触发）
+    setTimeout(() => {
+        const newItems = [
+            {
+                image: "https://picsum.photos/seed/new1/600/400",
+                title: "其他桌游敬请期待",
+                url: ""
+            },
+        ];
+        addItems(newItems);
+    }, 5000);
 </script>
 </body>
-
-
-
 </html>
