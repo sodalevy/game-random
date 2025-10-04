@@ -814,6 +814,7 @@
 
     // 新增：生成结果图片
     function generateResultImage() {
+        console.log(111);
         // 关闭分享模态框
         shareModal.classList.add('hidden');
 
@@ -824,38 +825,87 @@
         // 设置玩家数量显示
         previewPlayerCount.textContent = `玩家人数: ${selectedPlayerCount}人`;
 
-        // 创建图片预览内容
-        const previewContainer = document.createElement('div');
-        previewContainer.className = 'space-y-4';
+        // 创建完整的预览容器
+        const fullPreviewContainer = document.createElement('div');
+        fullPreviewContainer.className = 'bg-white rounded-xl shadow-lg overflow-hidden w-full';
+        fullPreviewContainer.style.backgroundColor = '#ffffff';
 
-        // 创建国家卡片预览
+        // 创建标题区域
+        const header = document.createElement('div');
+        header.className = 'bg-gradient-to-r from-primary to-blue-700 text-white p-4 text-center';
+        header.innerHTML = `        <h2 class="text-xl font-bold">随机国家抽取结果</h2>
+        <p class="mt-1">${previewPlayerCount.textContent}</p>
+    `;
+        fullPreviewContainer.appendChild(header);
+
+        // 创建内容区域
+        const contentContainer = document.createElement('div');
+        contentContainer.className = 'p-4';
+        contentContainer.style.backgroundColor = '#ffffff';
+
+        // 为每个国家创建卡片
         drawnCountries.forEach((country, index) => {
             const card = document.createElement('div');
-            card.className = 'flex items-center p-3 border rounded-lg';
+            card.className = 'border rounded-lg p-4 mb-4 last:mb-0';
+            card.style.backgroundColor = '#ffffff';
+            card.style.borderColor = '#e5e7eb';
 
             // 获取当前来源的图片URL
             const imageUrl = getCountryImageUrl(country);
 
-            card.innerHTML = `
-                <div class="flex-shrink-0 w-16 h-16 rounded overflow-hidden bg-gray-100">
-                    <img src="${imageUrl}" alt="${country.name}" class="w-full h-full object-cover">
-                </div>
-                <div class="ml-3 flex-grow">
-                    <div class="font-semibold">${country.flag} ${country.name}</div>
-                    <div class="text-sm text-gray-500">玩家 ${index + 1}</div>
+            // 构建王朝图片HTML
+            let dynastyImagesHtml = '';
+            if (country.dynasties && country.dynasties.length > 0) {
+                dynastyImagesHtml = `                <div class="mt-3">
+                    <div class="text-sm font-medium text-gray-700 mb-2">王朝图片:</div>
+                    <div class="flex gap-2 flex-wrap">
+                        ${country.dynasties.map((dynastyImg, i) => `                            <div class="flex flex-col items-center">
+                                <img src="${dynastyImg}"
+                                     alt="王朝图片${i+1}"
+                                     class="w-20 h-16 object-cover rounded border"
+                                     onerror="this.src='https://picsum.photos/seed=${country.name}_dynasty${i+1}/100/80'">
+                                <span class="text-xs text-gray-500 mt-1">王朝${i+1}</span>
+                            </div>
+                        `).join('')}                    </div>
                 </div>
             `;
+            }
 
-            previewContainer.appendChild(card);
+            card.innerHTML = `            <div class="flex items-start mb-3">
+                <div class="flex-shrink-0 w-16 h-16 rounded overflow-hidden bg-gray-100 mr-3">
+                    <img src="${imageUrl}"
+                         alt="${country.name}"
+                         class="w-full h-full object-cover"
+                         onerror="this.src='https://picsum.photos/seed=${encodeURIComponent(country.name)}/100/100'">
+                </div>
+                <div class="flex-grow">
+                    <div class="font-bold text-lg">${country.flag} ${country.name}</div>
+                    <div class="text-sm text-gray-600">玩家 ${index + 1}</div>
+                </div>
+            </div>
+            ${dynastyImagesHtml}        `;
+
+            contentContainer.appendChild(card);
         });
+
+        fullPreviewContainer.appendChild(contentContainer);
+
+        // 清空内容并添加预览容器
+        imagePreviewContent.innerHTML = '';
+        imagePreviewContent.appendChild(fullPreviewContainer);
 
         // 使用html2canvas生成图片
         setTimeout(() => {
-            html2canvas(imagePreviewContent.parentElement, {
+            html2canvas(fullPreviewContainer, {
                 backgroundColor: '#ffffff',
-                scale: 2, // 提高图片质量
+                scale: 2,
                 useCORS: true,
-                logging: false
+                allowTaint: true,
+                logging: false,
+                scrollX: 0,
+                scrollY: 0,
+                width: fullPreviewContainer.scrollWidth,
+                height: fullPreviewContainer.scrollHeight
             }).then(canvas => {
                 // 保存生成的图片数据
                 generatedImageDataUrl = canvas.toDataURL('image/png');
