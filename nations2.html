@@ -1292,6 +1292,7 @@
     };
 
     // 生成结果图片的函数
+    // 在 generateResultImage 函数中，在调用 html2canvas 之前添加以下代码
     function generateResultImage() {
         if (drawnCountries.length === 0) return;
 
@@ -1311,46 +1312,52 @@
             let dynastyImagesHtml = '';
             if (country.dynasties && country.dynasties.length > 0) {
                 dynastyImagesHtml = `
-                    <div class="mt-3">
-                        <div class="text-sm font-medium text-gray-700 mb-2">王朝图片:</div>
-                        <div class="flex flex-wrap gap-2">
-                            ${country.dynasties.map((dynastyImg, i) => `
-                                <div class="flex flex-col items-center">
-                                    <img src="${dynastyImg}"
-                                         alt="${country.name} 王朝图片 ${i+1}"
-                                         class="w-20 h-16 object-cover rounded border">
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                `;
-            }
-
-            countryDiv.innerHTML = `
-                <div class="flex items-center mb-3">
-                    <span class="text-lg mr-2">${country.flag}</span>
-                    <h3 class="text-xl font-bold text-gray-800">${country.name}</h3>
-                    <span class="ml-auto bg-primary text-white text-sm font-medium px-2 py-1 rounded">
-                        玩家 ${index + 1}
-                    </span>
-                </div>
-
-                <div class="flex flex-col md:flex-row gap-4">
-                    <div class="flex-shrink-0">
-                        <img src="${imageUrl}"
-                             alt="${country.name} 封面图"
-                             class="w-40 h-32 object-contain rounded border">
-                    </div>
-                    <div class="flex-grow">
-                        <div class="text-gray-700 mb-2">
-                            <p><strong>国家ID:</strong> ${country.id}</p>
-                        </div>
-                        ${dynastyImagesHtml}
+                <div class="mt-3">
+                    <div class="text-sm font-medium text-gray-700 mb-2">王朝图片:</div>
+                    <div class="flex flex-wrap gap-2">
+                        ${country.dynasties.map((dynastyImg, i) => `
+                            <div class="flex flex-col items-center">
+                                <img src="${dynastyImg}"
+                                     alt="${country.name} 王朝图片 ${i+1}"
+                                     class="w-20 h-16 object-cover rounded border">
+                            </div>
+                        `).join('')}
                     </div>
                 </div>
             `;
+            }
+
+            countryDiv.innerHTML = `
+            <div class="flex items-center mb-3">
+                <span class="text-lg mr-2">${country.flag}</span>
+                <h3 class="text-xl font-bold text-gray-800">${country.name}</h3>
+                <span class="ml-auto bg-primary text-white text-sm font-medium px-2 py-1 rounded">
+                    玩家 ${index + 1}
+                </span>
+            </div>
+
+            <div class="flex flex-col md:flex-row gap-4">
+                <div class="flex-shrink-0">
+                    <img src="${imageUrl}"
+                         alt="${country.name} 封面图"
+                         class="w-40 h-32 object-contain rounded border">
+                </div>
+                <div class="flex-grow">
+                    <div class="text-gray-700 mb-2">
+                        <p><strong>国家ID:</strong> ${country.id}</p>
+                    </div>
+                    ${dynastyImagesHtml}
+                </div>
+            </div>
+        `;
 
             generatedCountries.appendChild(countryDiv);
+        });
+
+        // 为所有图片元素添加 crossorigin 属性
+        const imgElements = generatedCountries.querySelectorAll('img');
+        imgElements.forEach(img => {
+            img.crossOrigin = 'anonymous';
         });
 
         // 使用html2canvas生成图片
@@ -1359,7 +1366,8 @@
             html2canvas(imageGenerator, {
                 scale: 2, // 提高图片质量
                 useCORS: true,
-                backgroundColor: '#ffffff'
+                backgroundColor: '#ffffff',
+                logging: true // 启用日志以便调试
             }).then(canvas => {
                 // 将canvas转换为图片并下载
                 const image = canvas.toDataURL('image/png');
@@ -1374,10 +1382,11 @@
                 showImageGenerationSuccess();
             }).catch(err => {
                 console.error('图片生成失败:', err);
-                alert('图片生成失败，请重试');
+                alert('图片生成失败，可能是由于图片资源跨域问题。请尝试切换到远程图片源再生成。');
             });
         }, 500); // 等待内容渲染
     }
+
 
     // 显示图片生成成功提示
     function showImageGenerationSuccess() {
