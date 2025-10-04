@@ -1291,9 +1291,7 @@
         return Math.abs(hash);
     };
 
-    // 生成结果图片的函数
-    // 生成结果图片的函数
-    // 在 generateResultImage 函数中，替换整个函数为以下代码
+    //  替换整个 generateResultImage 函数为以下代码
     function generateResultImage() {
         if (drawnCountries.length === 0) return;
 
@@ -1372,10 +1370,40 @@
                 // 添加额外配置以避免颜色解析问题
                 ignoreElements: (element) => {
                     // 忽略可能包含oklch颜色的元素
-                    return element.style && (
-                        element.style.color && element.style.color.includes('oklch') ||
-                        element.style.backgroundColor && element.style.backgroundColor.includes('oklch')
-                    );
+                    if (element.style) {
+                        const style = window.getComputedStyle(element);
+                        return (
+                            (style.color && style.color.includes('oklch')) ||
+                            (style.backgroundColor && style.backgroundColor.includes('oklch')) ||
+                            (style.borderColor && style.borderColor.includes('oklch')) ||
+                            (style.borderTopColor && style.borderTopColor.includes('oklch')) ||
+                            (style.borderRightColor && style.borderRightColor.includes('oklch')) ||
+                            (style.borderBottomColor && style.borderBottomColor.includes('oklch')) ||
+                            (style.borderLeftColor && style.borderLeftColor.includes('oklch'))
+                        );
+                    }
+                    return false;
+                },
+                onclone: (clonedDoc) => {
+                    // 克隆文档时替换所有oklch颜色为rgb颜色
+                    const allElements = clonedDoc.querySelectorAll('*');
+                    allElements.forEach(element => {
+                        const styles = window.getComputedStyle(element);
+                        const color = styles.color;
+                        const bgColor = styles.backgroundColor;
+                        const borderColor = styles.borderColor;
+
+                        // 如果颜色包含oklch，则替换为标准颜色
+                        if (color && color.includes('oklch')) {
+                            element.style.color = '#000000';
+                        }
+                        if (bgColor && bgColor.includes('oklch')) {
+                            element.style.backgroundColor = '#ffffff';
+                        }
+                        if (borderColor && borderColor.includes('oklch')) {
+                            element.style.borderColor = '#000000';
+                        }
+                    });
                 }
             }).then(canvas => {
                 // 将canvas转换为图片并下载
@@ -1395,6 +1423,7 @@
             });
         }, 500); // 等待内容渲染
     }
+
 
 
 
