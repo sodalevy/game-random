@@ -1292,7 +1292,8 @@
     };
 
     // 生成结果图片的函数
-    // 在 generateResultImage 函数中，在调用 html2canvas 之前添加以下代码
+    // 生成结果图片的函数
+    // 在 generateResultImage 函数中，替换整个函数为以下代码
     function generateResultImage() {
         if (drawnCountries.length === 0) return;
 
@@ -1331,7 +1332,7 @@
             <div class="flex items-center mb-3">
                 <span class="text-lg mr-2">${country.flag}</span>
                 <h3 class="text-xl font-bold text-gray-800">${country.name}</h3>
-                <span class="ml-auto bg-primary text-white text-sm font-medium px-2 py-1 rounded">
+                <span class="ml-auto bg-blue-600 text-white text-sm font-medium px-2 py-1 rounded">
                     玩家 ${index + 1}
                 </span>
             </div>
@@ -1367,7 +1368,15 @@
                 scale: 2, // 提高图片质量
                 useCORS: true,
                 backgroundColor: '#ffffff',
-                logging: true // 启用日志以便调试
+                logging: false, // 禁用日志以避免oklch警告
+                // 添加额外配置以避免颜色解析问题
+                ignoreElements: (element) => {
+                    // 忽略可能包含oklch颜色的元素
+                    return element.style && (
+                        element.style.color && element.style.color.includes('oklch') ||
+                        element.style.backgroundColor && element.style.backgroundColor.includes('oklch')
+                    );
+                }
             }).then(canvas => {
                 // 将canvas转换为图片并下载
                 const image = canvas.toDataURL('image/png');
@@ -1386,6 +1395,7 @@
             });
         }, 500); // 等待内容渲染
     }
+
 
 
     // 显示图片生成成功提示
