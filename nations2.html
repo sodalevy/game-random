@@ -72,7 +72,7 @@
                 @apply border border-gray-300 hover:border-primary text-gray-700 hover:text-primary font-medium py-2 px-4 rounded-lg transition-all duration-300;
             }
             .image-loader {
-                @apply absolute inset-0 flex items-center justify-center bg-gray-100;
+                @apply absolute inset-0 flex items-center justify-center bg-gray-100 z-10;
             }
             .share-btn {
                 @apply text-sm text-gray-600 hover:text-primary transition-colors flex items-center gap-1;
@@ -82,6 +82,13 @@
             }
             .config-badge {
                 @apply absolute top-0 right-0 w-2 h-2 bg-accent rounded-full;
+            }
+            /* 模态框图片容器样式优化 */
+            .modal-image-container {
+                @apply relative w-full max-h-[70vh] flex items-center justify-center bg-gray-100 rounded overflow-hidden;
+            }
+            .modal-image {
+                @apply max-w-full max-h-full object-contain transition-opacity duration-500 ease-in-out;
             }
         }
     </style>
@@ -260,6 +267,35 @@
     </div>
 </div>
 
+<!-- 图片查看模态框（预先创建，避免动态创建的DOM问题） -->
+<div id="imageModal" class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] flex flex-col animate-fade-in">
+        <div class="p-4 border-b flex justify-between items-center">
+            <h3 class="font-semibold text-lg flex items-center" id="modalTitle">
+                图片查看
+            </h3>
+            <button id="closeImageModal" class="text-gray-500 hover:text-gray-800 transition-colors">
+                <i class="fa fa-times text-xl"></i>
+            </button>
+        </div>
+        <div class="flex-grow p-4">
+            <div class="modal-image-container">
+                <!-- 图片加载指示器 -->
+                <div class="image-loader" id="modalImageLoader">
+                    <i class="fa fa-circle-o-notch fa-spin text-primary/50 text-2xl"></i>
+                </div>
+                <!-- 图片元素 -->
+                <img id="modalImage" class="modal-image opacity-0" alt="国家详情图">
+            </div>
+            <!-- 错误提示 -->
+            <div id="modalImageError" class="mt-4 text-center text-amber-500 hidden">
+                <i class="fa fa-exclamation-triangle mr-1"></i>
+                <span>图片加载失败，已自动尝试备用图片</span>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- 页脚 -->
 <footer class="bg-gray-900 text-gray-300 mt-12">
     <div class="container mx-auto px-4 py-6">
@@ -281,23 +317,142 @@
 <script>
     // 17个国家的数据 - 包含国家名称和封面图
     const countryDatabase = [
-        { name: "中国", image: "https://oss.gstonegames.com/static/image/discuss/f_1101359571_47874564.jpg", flag: "🇨🇳", id: 0, localImg: "doc/nations/DPlayerBoard_China.jpg" },
-        { name: "美国", image: "https://oss.gstonegames.com/static/image/discuss/f_6890359571_34162464.jpg", flag: "🇺🇸", id: 1, localImg: "doc/nations/DPlayerBoard_America.jpg" },
-        { name: "埃塞俄比亚", image: "https://oss.gstonegames.com/static/image/discuss/f_9201359571_83136983.jpg", flag: "🇪🇹", id: 2, localImg: "doc/nations/DPlayerBoard_Ethiopia.jpg" },
-        { name: "印度", image: "https://oss.gstonegames.com/static/image/discuss/f_9401359571_38747658.jpg", flag: "🇮🇳", id: 3, localImg: "doc/nations/DPlayerBoard_India.jpg" },
-        { name: "日本", image: "https://oss.gstonegames.com/static/image/discuss/f_8501359571_63655516.jpg", flag: "🇯🇵", id: 4, localImg: "doc/nations/DPlayerBoard_Japan.jpg" },
-        { name: "韩国", image: "https://oss.gstonegames.com/static/image/discuss/f_8801359571_67030899.jpg", flag: "🇰🇷", id: 5, localImg: "doc/nations/DPlayerBoard_Korea.jpg" },
-        { name: "马里", image: "https://oss.gstonegames.com/static/image/discuss/f_9931359571_81956111.jpg", flag: "🇲🇱", id: 6, localImg: "doc/nations/DPlayerBoard_Mali.jpg" },
-        { name: "蒙古国", image: "https://oss.gstonegames.com/static/image/discuss/f_8041359571_75834469.jpg", flag: "🇲🇳", id: 7, localImg: "doc/nations/DPlayerBoard_Mongolia.jpg" },
-        { name: "波兰", image: "https://oss.gstonegames.com/static/image/discuss/f_2241359571_40056557.jpg", flag: "🇵🇱", id: 8, localImg: "doc/nations/DPlayerBoard_Poland.jpg" },
-        { name: "葡萄牙", image: "https://oss.gstonegames.com/static/image/discuss/f_1341359571_68162785.jpg", flag: "🇵🇹", id: 9, localImg: "doc/nations/DPlayerBoard_Portugal.jpg" },
-        { name: "罗马", image: "https://oss.gstonegames.com/static/image/discuss/f_9341359571_30550665.jpg", flag: "🇮🇹", id: 10, localImg: "doc/nations/DPlayerBoard_Rome.jpg" },
-        { name: "维京", image: "https://oss.gstonegames.com/static/image/discuss/f_2541359571_22370662.jpg", flag: "🇳🇴", id: 11, localImg: "doc/nations/DPlayerBoard_Vikings.jpg" },
-        { name: "波斯", image: "https://oss.gstonegames.com/static/image/discuss/f_4141359571_85777670.jpg", flag: "🇮🇷", id: 12, localImg: "doc/nations/DPlayerBoard_Persia.jpg" },
-        { name: "埃及", image: "https://oss.gstonegames.com/static/image/discuss/f_9101359571_19497951.jpg", flag: "🇪🇬", id: 13, localImg: "doc/nations/DPlayerBoard_Egypt.jpg" },
-        { name: "威尼斯", image: "https://oss.gstonegames.com/static/image/discuss/f_6441359571_79701632.jpg", flag: "🇮🇹", id: 14, localImg: "doc/nations/DPlayerBoard_Venice.jpg" },
-        { name: "阿拉伯", image: "https://oss.gstonegames.com/static/image/discuss/f_1001359571_38305684.jpg", flag: "🇦🇪", id: 15, localImg: "doc/nations/DPlayerBoard_Arabs.jpg" },
-        { name: "希腊", image: "https://oss.gstonegames.com/static/image/discuss/f_9301359571_46725018.jpg", flag: "🇬🇷", id: 16, localImg: "doc/nations/DPlayerBoard_Greece.jpg" }
+        {
+            name: "中国",
+            image: "https://oss.gstonegames.com/static/image/discuss/f_1101359571_47874564.jpg",
+            flag: "🇨🇳",
+            id: 0,
+            localImg: "doc/nations/DPlayerBoard_China.jpg",
+            dynasties: ["doc/nations/China_1.jpg", "doc/nations/China_2.jpg"]
+        },
+        {
+            name: "美国",
+            image: "https://oss.gstonegames.com/static/image/discuss/f_6890359571_34162464.jpg",
+            flag: "🇺🇸",
+            id: 1,
+            localImg: "doc/nations/DPlayerBoard_America.jpg",
+            dynasties: ["doc/nations/America_1.jpg", "doc/nations/America_2.jpg"]
+        },
+        {
+            name: "埃塞俄比亚",
+            image: "https://oss.gstonegames.com/static/image/discuss/f_9201359571_83136983.jpg",
+            flag: "🇪🇹",
+            id: 2,
+            localImg: "doc/nations/DPlayerBoard_Ethiopia.jpg",
+            dynasties: ["doc/nations/Ethiopia_1.jpg", "doc/nations/Ethiopia_2.jpg"]
+        },
+        {
+            name: "印度",
+            image: "https://oss.gstonegames.com/static/image/discuss/f_9401359571_38747658.jpg",
+            flag: "🇮🇳",
+            id: 3,
+            localImg: "doc/nations/DPlayerBoard_India.jpg",
+            dynasties: ["doc/nations/India_1.jpg", "doc/nations/India_2.jpg"]
+        },
+        {
+            name: "日本",
+            image: "https://oss.gstonegames.com/static/image/discuss/f_8501359571_63655516.jpg",
+            flag: "🇯🇵",
+            id: 4,
+            localImg: "doc/nations/DPlayerBoard_Japan.jpg",
+            dynasties: ["doc/nations/Japan_1.jpg", "doc/nations/Japan_2.jpg"]
+        },
+        {
+            name: "韩国",
+            image: "https://oss.gstonegames.com/static/image/discuss/f_8801359571_67030899.jpg",
+            flag: "🇰🇷",
+            id: 5,
+            localImg: "doc/nations/DPlayerBoard_Korea.jpg",
+            dynasties: ["doc/nations/Korea_1.jpg", "doc/nations/Korea_2.jpg"]
+        },
+        {
+            name: "马里",
+            image: "https://oss.gstonegames.com/static/image/discuss/f_9931359571_81956111.jpg",
+            flag: "🇲🇱",
+            id: 6,
+            localImg: "doc/nations/DPlayerBoard_Mali.jpg",
+            dynasties: ["doc/nations/Mali_1.jpg", "doc/nations/Mali_2.jpg"]
+        },
+        {
+            name: "蒙古国",
+            image: "https://oss.gstonegames.com/static/image/discuss/f_8041359571_75834469.jpg",
+            flag: "🇲🇳",
+            id: 7,
+            localImg: "doc/nations/DPlayerBoard_Mongolia.jpg",
+            dynasties: ["doc/nations/Mongolia_1.jpg", "doc/nations/Mongolia_2.jpg"]
+        },
+        {
+            name: "波兰",
+            image: "https://oss.gstonegames.com/static/image/discuss/f_2241359571_40056557.jpg",
+            flag: "🇵🇱",
+            id: 8,
+            localImg: "doc/nations/DPlayerBoard_Poland.jpg",
+            dynasties: ["doc/nations/Poland_1.jpg", "doc/nations/Poland_2.jpg"]
+        },
+        {
+            name: "葡萄牙",
+            image: "https://oss.gstonegames.com/static/image/discuss/f_1341359571_68162785.jpg",
+            flag: "🇵🇹",
+            id: 9,
+            localImg: "doc/nations/DPlayerBoard_Portugal.jpg",
+            dynasties: ["doc/nations/Portugal_1.jpg", "doc/nations/Portugal_2.jpg"]
+        },
+        {
+            name: "罗马",
+            image: "https://oss.gstonegames.com/static/image/discuss/f_9341359571_30550665.jpg",
+            flag: "🇮🇹",
+            id: 10,
+            localImg: "doc/nations/DPlayerBoard_Rome.jpg",
+            dynasties: ["doc/nations/Rome_1.jpg", "doc/nations/Rome_2.jpg"]
+        },
+        {
+            name: "维京",
+            image: "https://oss.gstonegames.com/static/image/discuss/f_2541359571_22370662.jpg",
+            flag: "🇳🇴",
+            id: 11,
+            localImg: "doc/nations/DPlayerBoard_Vikings.jpg",
+            dynasties: ["doc/nations/Vikings_1.jpg", "doc/nations/Vikings_2.jpg"]
+        },
+        {
+            name: "波斯",
+            image: "https://oss.gstonegames.com/static/image/discuss/f_4141359571_85777670.jpg",
+            flag: "🇮🇷",
+            id: 12,
+            localImg: "doc/nations/DPlayerBoard_Persia.jpg",
+            dynasties: ["doc/nations/Persia_1.jpg", "doc/nations/Persia_2.jpg"]
+        },
+        {
+            name: "埃及",
+            image: "https://oss.gstonegames.com/static/image/discuss/f_9101359571_19497951.jpg",
+            flag: "🇪🇬",
+            id: 13,
+            localImg: "doc/nations/DPlayerBoard_Egypt.jpg",
+            dynasties: ["doc/nations/Egypt_1.jpg", "doc/nations/Egypt_2.jpg"]
+        },
+        {
+            name: "威尼斯",
+            image: "https://oss.gstonegames.com/static/image/discuss/f_6441359571_79701632.jpg",
+            flag: "🇮🇹",
+            id: 14,
+            localImg: "doc/nations/DPlayerBoard_Venice.jpg",
+            dynasties: ["doc/nations/Venice_1.jpg", "doc/nations/Venice_2.jpg"]
+        },
+        {
+            name: "阿拉伯",
+            image: "https://oss.gstonegames.com/static/image/discuss/f_1001359571_38305684.jpg",
+            flag: "🇦🇪",
+            id: 15,
+            localImg: "doc/nations/DPlayerBoard_Arabs.jpg",
+            dynasties: ["doc/nations/Arabs_1.jpg", "doc/nations/Arabs_2.jpg"]
+        },
+        {
+            name: "希腊",
+            image: "https://oss.gstonegames.com/static/image/discuss/f_9301359571_46725018.jpg",
+            flag: "🇬🇷",
+            id: 16,
+            localImg: "doc/nations/DPlayerBoard_Greece.jpg",
+            dynasties: ["doc/nations/Greece_1.jpg", "doc/nations/Greece_2.jpg"]
+        }
     ];
 
     // DOM元素
@@ -326,12 +481,20 @@
     const imageSourceRadios = document.querySelectorAll('input[name="imageSource"]');
     const currentImageSource = document.getElementById('currentImageSource');
     const currentImageSourceText = currentImageSource.querySelector('span.font-medium');
+    // 图片查看模态框元素（新增）
+    const imageModal = document.getElementById('imageModal');
+    const closeImageModal = document.getElementById('closeImageModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalImage = document.getElementById('modalImage');
+    const modalImageLoader = document.getElementById('modalImageLoader');
+    const modalImageError = document.getElementById('modalImageError');
 
     // 状态变量
     let selectedPlayerCount = 1;
     let drawnCountries = [];
     let currentSeed = null; // 用于生成随机数的种子
     let currentImageSourceType = 'image'; // 默认为image，可切换为localImg
+    let currentModalCountry = null; // 当前模态框显示的国家
 
     // 初始化页面
     document.addEventListener('DOMContentLoaded', () => {
@@ -347,9 +510,7 @@
             currentImageSourceType = imageSourceParam;
             // 更新单选按钮状态
             imageSourceRadios.forEach(radio => {
-                if (radio.value === currentImageSourceType) {
-                    radio.checked = true;
-                }
+                radio.checked = radio.value === currentImageSourceType;
             });
         }
         updateImageSourceDisplay(); // 更新图片来源显示
@@ -397,6 +558,9 @@
 
         // 绑定图片来源切换事件
         bindImageSourceChangeEvent();
+
+        // 绑定图片模态框事件
+        bindImageModalEvents();
     });
 
     // 初始化人数选择按钮
@@ -454,6 +618,83 @@
                 imageConfigMenu.classList.add('hidden');
             }
         });
+    }
+
+    // 新增：绑定图片模态框事件
+    function bindImageModalEvents() {
+        // 关闭模态框按钮事件
+        closeImageModal.addEventListener('click', () => {
+            closeImageModalHandler();
+        });
+
+        // 点击模态框背景关闭
+        imageModal.addEventListener('click', (e) => {
+            if (e.target === imageModal) {
+                closeImageModalHandler();
+            }
+        });
+
+        // 键盘ESC关闭
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !imageModal.classList.contains('hidden')) {
+                closeImageModalHandler();
+            }
+        });
+
+        // 图片加载事件
+        modalImage.addEventListener('load', () => {
+            modalImageLoader.style.transition = 'opacity 0.5s ease';
+            modalImageLoader.style.opacity = '0';
+            setTimeout(() => {
+                modalImageLoader.style.display = 'none';
+            }, 500);
+            // 显示图片
+            modalImage.classList.remove('opacity-0');
+            // 隐藏错误提示
+            modalImageError.classList.add('hidden');
+        });
+
+        // 图片加载错误事件
+        modalImage.addEventListener('error', () => {
+            handleModalImageError();
+        });
+    }
+
+    // 新增：关闭图片模态框处理函数
+    function closeImageModalHandler() {
+        imageModal.classList.add('hidden');
+        document.body.style.overflow = ''; // 恢复滚动
+        // 重置模态框状态
+        modalImage.classList.add('opacity-0');
+        modalImageLoader.style.display = 'flex';
+        modalImageLoader.style.opacity = '1';
+        modalImageError.classList.add('hidden');
+        currentModalCountry = null;
+    }
+
+    // 新增：处理模态框图片加载错误
+    function handleModalImageError() {
+        // 显示错误提示
+        modalImageError.classList.remove('hidden');
+
+        // 错误处理策略
+        if (currentModalCountry) {
+            // 1. 如果当前是本地图，尝试远程图
+            if (currentImageSourceType === 'localImg' && currentModalCountry.image) {
+                modalImage.src = currentModalCountry.image;
+                return;
+            }
+
+            // 2. 尝试使用国家名作为种子的备用图（4:3比例）
+            const fallbackUrl = `https://picsum.photos/seed/${currentModalCountry.name}/800/600`;
+            if (modalImage.src !== fallbackUrl) {
+                modalImage.src = fallbackUrl;
+                return;
+            }
+
+            // 3. 最终备用图
+            modalImage.src = `https://picsum.photos/800/600?grayscale&blur=2`;
+        }
     }
 
     // 新增：更新图片来源显示
@@ -703,8 +944,7 @@
             </div>
             <img src="${imageUrl}" alt="${country.name} 封面图"
             class="image-cover"
-            onload="imageLoaded('${loaderId}', this)"
-            onerror="imageError('${loaderId}', this, '${country.name}')">
+            data-country-id="${country.id}">
             <div class="absolute top-3 left-3 bg-primary/80 text-white text-xs font-medium px-2 py-1 rounded">
             玩家 ${index + 1}
             </div>
@@ -718,7 +958,8 @@
             #${index + 1}
             </span>
             </div>
-            <button class="view-details-btn w-full text-sm text-primary hover:text-primary/80 transition-colors flex items-center justify-center gap-1 py-1">
+            <button class="view-details-btn w-full text-sm text-primary hover:text-primary/80 transition-colors flex items-center justify-center gap-1 py-1"
+            data-country-id="${country.id}">
             <i class="fa fa-search-plus"></i> 查看详情
             </button>
             </div>
@@ -727,11 +968,20 @@
             // 添加到容器
             countryContainer.appendChild(countryCard);
 
+            // 获取图片元素并绑定加载事件
+            const imgElement = countryCard.querySelector('.image-cover');
+            imgElement.onload = function() {
+                imageLoaded(loaderId, this);
+            };
+            imgElement.onerror = function() {
+                imageError(loaderId, this, country.name);
+            };
+
             // 详情按钮事件
             const detailsBtn = countryCard.querySelector('.view-details-btn');
             detailsBtn.addEventListener('click', () => {
-                // 创建大图查看模态框（使用当前图片来源）
-                createImageModal(country);
+                // 显示图片查看模态框
+                showImageModal(country);
             });
         });
 
@@ -765,11 +1015,15 @@
             }
 
         // 失败降级策略：切换到另一种来源，最终用备用图
-        if (currentImageSourceType === 'localImg') {
-            // 本地图加载失败，尝试默认远程图
-            const fallbackUrl = countryDatabase.find(c => c.name === countryName)?.image;
-            if (fallbackUrl && imageElement.src !== fallbackUrl) {
-                imageElement.src = fallbackUrl;
+        const country = countryDatabase.find(c => c.name === countryName);
+        if (country) {
+            if (currentImageSourceType === 'localImg' && imageElement.src !== country.image) {
+                // 本地图加载失败，尝试远程图
+                imageElement.src = country.image;
+                return;
+            } else if (currentImageSourceType === 'image' && country.localImg && imageElement.src !== country.localImg) {
+                // 远程图加载失败，尝试本地图
+                imageElement.src = country.localImg;
                 return;
             }
         }
@@ -780,64 +1034,33 @@
         imageElement.classList.add('loaded'); // 强制显示备用图
     }
 
-    // 创建图片查看模态框（使用当前图片来源）
-    function createImageModal(country) {
-        // 检查是否已存在模态框，若有则移除
-        const existingModal = document.getElementById('imageModal');
-        if (existingModal) {
-            existingModal.remove();
-        }
+    // 显示图片查看模态框（核心修复函数）
+    function showImageModal(country) {
+        if (!country) return;
 
-        // 获取当前来源的大图URL
+        // 保存当前显示的国家
+        currentModalCountry = country;
+
+        // 更新模态框标题
+        const sourceText = currentImageSourceType === 'image' ? '远程图' : '本地图';
+        modalTitle.innerHTML = `${country.flag} ${country.name} (${sourceText})`;
+
+        // 获取当前来源的图片URL
         const imageUrl = getCountryImageUrl(country);
-        const loaderId = `modal-loader-${Date.now()}`;
 
-        // 创建模态框容器
-        const modal = document.createElement('div');
-        modal.id = 'imageModal';
-        modal.className = 'fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 animate-fade-in';
-        modal.innerHTML = `
-            <div class="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] flex flex-col">
-                <div class="p-4 border-b flex justify-between items-center">
-                    <h3 class="font-semibold text-lg flex items-center">
-                        ${country.flag} ${country.name}
-                        <span class="ml-2 text-sm text-gray-500">(${currentImageSourceType === 'image' ? '远程图' : '本地图'})</span>
-                    </h3>
-                    <button id="closeModal" class="text-gray-500 hover:text-gray-800">
-                        <i class="fa fa-times text-xl"></i>
-                    </button>
-                </div>
-                <div class="flex-grow flex items-center justify-center p-4 bg-gray-100 relative">
-                    <div class="image-loader absolute" id="${loaderId}">
-                        <i class="fa fa-circle-o-notch fa-spin text-primary/50"></i>
-                    </div>
-                    <img src="${imageUrl}"
-                         alt="${country.name} 大图"
-                         class="max-w-full max-h-[70vh] object-contain rounded opacity-0 transition-opacity duration-300"
-                         onload="imageLoaded('${loaderId}', this)"
-                         onerror="imageError('${loaderId}', this, '${country.name}')">
-                </div>
-            </div>
-        `;
+        // 设置图片信息
+        modalImage.src = imageUrl;
+        modalImage.alt = `${country.name} 详情图`;
 
-        // 添加到页面
-        document.body.appendChild(modal);
+        // 显示模态框
+        imageModal.classList.remove('hidden');
         document.body.style.overflow = 'hidden'; // 防止背景滚动
 
-        // 关闭模态框事件
-        const closeBtn = modal.querySelector('#closeModal');
-        closeBtn.addEventListener('click', () => {
-            modal.remove();
-            document.body.style.overflow = ''; // 恢复滚动
-        });
-
-        // 点击模态框背景关闭
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                modal.remove();
-                document.body.style.overflow = '';
-            }
-        });
+        // 重置加载状态
+        modalImageLoader.style.display = 'flex';
+        modalImageLoader.style.opacity = '1';
+        modalImage.classList.add('opacity-0');
+        modalImageError.classList.add('hidden');
     }
 
     // 生成随机种子
