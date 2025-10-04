@@ -111,13 +111,13 @@
             </h1>
             <div class="flex items-center gap-3">
                 <!-- 新增：图片来源配置按钮 -->
-                <div class="relative group">
+                <div class="relative" id="imageConfigWrapper">
                     <button id="imageConfigBtn" class="config-btn">
                         <i class="fa fa-picture-o text-lg"></i>
                         <span class="config-badge"></span>
                     </button>
                     <!-- 图片来源下拉菜单 -->
-                    <div id="imageConfigMenu" class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-1 hidden group-hover:block z-40">
+                    <div id="imageConfigMenu" class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-1 hidden z-40">
                         <label class="block px-4 py-2 text-sm text-gray-700 font-medium">图片来源</label>
                         <div class="px-2 py-1">
                             <label class="flex items-center px-2 py-2 rounded hover:bg-gray-100 cursor-pointer">
@@ -487,6 +487,7 @@
     // 新增：图片配置相关元素
     const imageConfigBtn = document.getElementById('imageConfigBtn');
     const imageConfigMenu = document.getElementById('imageConfigMenu');
+    const imageConfigWrapper = document.getElementById('imageConfigWrapper');
     const imageSourceRadios = document.querySelectorAll('input[name="imageSource"]');
     const currentImageSource = document.getElementById('currentImageSource');
     const currentImageSourceText = currentImageSource.querySelector('span.font-medium');
@@ -552,6 +553,7 @@
                     // 显示结果
                     currentSeed = seedParam;
                     initialState.classList.add('hidden');
+                    bindImageModalEvents();
                     generateDrawResult(false); // 不显示加载状态直接生成结果
                     return;
                 }
@@ -561,7 +563,7 @@
         }
 
         // 默认选中1人
-        playerBtns[0].click();
+        playerBtns[3].click();
 
         // 显示初始状态
         initialState.classList.remove('hidden');
@@ -603,6 +605,11 @@
 
     // 新增：绑定图片来源切换事件
     function bindImageSourceChangeEvent() {
+        imageConfigBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            imageConfigMenu.classList.toggle('hidden');
+        });
+
         imageSourceRadios.forEach(radio => {
             radio.addEventListener('change', (e) => {
                 currentImageSourceType = e.target.value;
@@ -624,7 +631,8 @@
 
         // 点击页面其他地方关闭配置菜单
         document.addEventListener('click', (e) => {
-            if (!imageConfigBtn.contains(e.target) && !imageConfigMenu.contains(e.target)) {
+            // 检查点击是否在配置菜单内部
+            if (!imageConfigWrapper.contains(e.target) && e.target !== imageConfigBtn) {
                 imageConfigMenu.classList.add('hidden');
             }
         });
@@ -674,11 +682,17 @@
     function closeImageModalHandler() {
         imageModal.classList.add('hidden');
         document.body.style.overflow = ''; // 恢复滚动
+
         // 重置模态框状态
         modalImage.classList.add('opacity-0');
         modalImageLoader.style.display = 'flex';
         modalImageLoader.style.opacity = '1';
         modalImageError.classList.add('hidden');
+
+        // 清理事件监听器
+        modalImage.onload = null;
+        modalImage.onerror = null;
+
         currentModalCountry = null;
         thumbnailNavigation.innerHTML = ''; // 清空缩略图
     }
@@ -1009,7 +1023,9 @@
 
             // 详情按钮事件
             const detailsBtn = countryCard.querySelector('.view-details-btn');
-            detailsBtn.addEventListener('click', () => {
+            detailsBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
                 // 显示图片查看模态框
                 showImageModal(country);
             });
@@ -1092,6 +1108,21 @@
         modalImage.classList.add('opacity-0');
         modalImageError.classList.add('hidden');
 
+        // 确保图片加载事件正确绑定
+        modalImage.onload = function() {
+            modalImageLoader.style.transition = 'opacity 0.5s ease';
+            modalImageLoader.style.opacity = '0';
+            setTimeout(() => {
+                modalImageLoader.style.display = 'none';
+            }, 500);
+            modalImage.classList.remove('opacity-0');
+            modalImageError.classList.add('hidden');
+        };
+
+        modalImage.onerror = function() {
+            handleModalImageError();
+        };
+
         // 创建缩略图导航
         createThumbnailNavigation(country, imageUrl);
     }
@@ -1148,6 +1179,21 @@
                 modalImage.classList.add('opacity-0');
                 modalImageLoader.style.display = 'flex';
                 modalImageLoader.style.opacity = '1';
+
+                // 重新绑定加载和错误事件以处理新图片
+                modalImage.onload = function() {
+                    modalImageLoader.style.transition = 'opacity 0.5s ease';
+                    modalImageLoader.style.opacity = '0';
+                    setTimeout(() => {
+                        modalImageLoader.style.display = 'none';
+                    }, 500);
+                    modalImage.classList.remove('opacity-0');
+                    modalImageError.classList.add('hidden');
+                };
+
+                modalImage.onerror = function() {
+                    handleModalImageError();
+                };
             });
 
             thumbnailContainer.appendChild(thumbnail);
