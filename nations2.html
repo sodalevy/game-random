@@ -20,6 +20,7 @@
                         primary: '#2563EB',
                         secondary: '#4B5563',
                         accent: '#F59E0B',
+                        'blue-700': '#1D4ED8'
                     },
                     fontFamily: {
                         inter: ['Inter', 'system-ui', 'sans-serif'],
@@ -103,8 +104,10 @@
             .image-preview-container {
                 @apply max-w-md mx-auto bg-white rounded-xl shadow-lg overflow-hidden;
             }
+            /* 修改渐变样式，避免使用 oklch */
             .image-preview-header {
-                @apply bg-gradient-to-r from-primary to-blue-700 text-white p-4 text-center;
+                @apply text-white p-4 text-center;
+                background: linear-gradient(to right, #2563EB, #1D4ED8);
             }
         }
     </style>
@@ -814,7 +817,6 @@
 
     // 新增：生成结果图片
     function generateResultImage() {
-        console.log(111);
         // 关闭分享模态框
         shareModal.classList.add('hidden');
 
@@ -830,12 +832,14 @@
         fullPreviewContainer.className = 'bg-white rounded-xl shadow-lg overflow-hidden w-full';
         fullPreviewContainer.style.backgroundColor = '#ffffff';
 
-        // 创建标题区域
+        // 创建标题区域 (使用修复后的渐变)
         const header = document.createElement('div');
-        header.className = 'bg-gradient-to-r from-primary to-blue-700 text-white p-4 text-center';
-        header.innerHTML = `        <h2 class="text-xl font-bold">随机国家抽取结果</h2>
-        <p class="mt-1">${previewPlayerCount.textContent}</p>
-    `;
+        header.className = 'text-white p-4 text-center';
+        header.style.background = 'linear-gradient(to right, #2563EB, #1D4ED8)';
+        header.innerHTML = `
+            <h2 class="text-xl font-bold">随机国家抽取结果</h2>
+            <p class="mt-1">${previewPlayerCount.textContent}</p>
+        `;
         fullPreviewContainer.appendChild(header);
 
         // 创建内容区域
@@ -856,34 +860,39 @@
             // 构建王朝图片HTML
             let dynastyImagesHtml = '';
             if (country.dynasties && country.dynasties.length > 0) {
-                dynastyImagesHtml = `                <div class="mt-3">
-                    <div class="text-sm font-medium text-gray-700 mb-2">王朝图片:</div>
-                    <div class="flex gap-2 flex-wrap">
-                        ${country.dynasties.map((dynastyImg, i) => `                            <div class="flex flex-col items-center">
-                                <img src="${dynastyImg}"
-                                     alt="王朝图片${i+1}"
-                                     class="w-20 h-16 object-cover rounded border"
-                                     onerror="this.src='https://picsum.photos/seed=${country.name}_dynasty${i+1}/100/80'">
-                                <span class="text-xs text-gray-500 mt-1">王朝${i+1}</span>
-                            </div>
-                        `).join('')}                    </div>
-                </div>
-            `;
+                dynastyImagesHtml = `
+                    <div class="mt-3">
+                        <div class="text-sm font-medium text-gray-700 mb-2">王朝图片:</div>
+                        <div class="flex gap-2 flex-wrap">
+                            ${country.dynasties.map((dynastyImg, i) => `
+                                <div class="flex flex-col items-center">
+                                    <img src="${dynastyImg}"
+                                         alt="王朝图片${i+1}"
+                                         class="w-20 h-16 object-cover rounded border"
+                                         onerror="this.src='https://picsum.photos/seed=${country.name}_dynasty${i+1}/100/80'">
+                                    <span class="text-xs text-gray-500 mt-1">王朝${i+1}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
             }
 
-            card.innerHTML = `            <div class="flex items-start mb-3">
-                <div class="flex-shrink-0 w-16 h-16 rounded overflow-hidden bg-gray-100 mr-3">
-                    <img src="${imageUrl}"
-                         alt="${country.name}"
-                         class="w-full h-full object-cover"
-                         onerror="this.src='https://picsum.photos/seed=${encodeURIComponent(country.name)}/100/100'">
+            card.innerHTML = `
+                <div class="flex items-start mb-3">
+                    <div class="flex-shrink-0 w-16 h-16 rounded overflow-hidden bg-gray-100 mr-3">
+                        <img src="${imageUrl}"
+                             alt="${country.name}"
+                             class="w-full h-full object-cover"
+                             onerror="this.src='https://picsum.photos/seed=${encodeURIComponent(country.name)}/100/100'">
+                    </div>
+                    <div class="flex-grow">
+                        <div class="font-bold text-lg">${country.flag} ${country.name}</div>
+                        <div class="text-sm text-gray-600">玩家 ${index + 1}</div>
+                    </div>
                 </div>
-                <div class="flex-grow">
-                    <div class="font-bold text-lg">${country.flag} ${country.name}</div>
-                    <div class="text-sm text-gray-600">玩家 ${index + 1}</div>
-                </div>
-            </div>
-            ${dynastyImagesHtml}        `;
+                ${dynastyImagesHtml}
+            `;
 
             contentContainer.appendChild(card);
         });
@@ -1282,27 +1291,27 @@
         resultSection.classList.remove('hidden');
     }
 
-        // 图片加载完成处理函数
-        function imageLoaded(loaderId, imageElement) {
-            const loader = document.getElementById(loaderId);
-            if (loader) {
-                // 平滑隐藏加载指示器
-                loader.style.transition = 'opacity 0.3s ease';
-                loader.style.opacity = '0';
-                setTimeout(() => {
-                    loader.style.display = 'none';
-                }, 300);
-            }
-            // 立即标记图片为已加载，触发显示动画
-            imageElement.classList.add('loaded');
+    // 图片加载完成处理函数
+    function imageLoaded(loaderId, imageElement) {
+        const loader = document.getElementById(loaderId);
+        if (loader) {
+            // 平滑隐藏加载指示器
+            loader.style.transition = 'opacity 0.3s ease';
+            loader.style.opacity = '0';
+            setTimeout(() => {
+                loader.style.display = 'none';
+            }, 300);
         }
+        // 立即标记图片为已加载，触发显示动画
+        imageElement.classList.add('loaded');
+    }
 
-        // 图片加载失败处理函数（适配不同来源）
-        function imageError(loaderId, imageElement, countryName) {
-            const loader = document.getElementById(loaderId);
-            if (loader) {
-                // 显示错误信息替代加载指示器
-                loader.innerHTML = `<i class="fa fa-exclamation-triangle text-amber-500"></i>`;
+    // 图片加载失败处理函数（适配不同来源）
+    function imageError(loaderId, imageElement, countryName) {
+        const loader = document.getElementById(loaderId);
+        if (loader) {
+            // 显示错误信息替代加载指示器
+            loader.innerHTML = `<i class="fa fa-exclamation-triangle text-amber-500"></i>`;
             loader.classList.add('bg-amber-50');
             }
 
