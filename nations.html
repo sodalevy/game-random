@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>随机国家图片抽取</title>
+    <title>国家玩家面板抽取</title>
     <!-- 引入Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- 引入Font Awesome -->
@@ -107,7 +107,7 @@
         <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
             <h1 class="text-[clamp(1.5rem,3vw,2.2rem)] font-bold text-gray-900 flex items-center">
                 <i class="fa fa-globe text-primary mr-3 text-2xl"></i>
-                随机国家图片抽取
+                国家玩家面板抽取
             </h1>
             <div class="flex items-center gap-3">
                 <!-- 新增：图片来源配置按钮 -->
@@ -238,7 +238,7 @@
             <div class="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
                 <i class="fa fa-circle-o-notch fa-spin text-primary text-3xl"></i>
             </div>
-            <h3 class="text-xl font-semibold mb-2">正在抽取国家</h3>
+            <h3 class="text-xl font-semibold mb-2">正在抽取国家面板</h3>
             <p class="text-gray-500" id="loadingText">请稍候...</p>
             <div class="mt-6 w-full bg-gray-200 rounded-full h-2.5">
                 <div id="loadingBar" class="bg-primary h-2.5 rounded-full w-0 transition-all duration-1500"></div>
@@ -263,14 +263,6 @@
                 <i class="fa fa-copy mr-1"></i> 复制
             </button>
         </div>
-        <div class="flex gap-2">
-            <button class="btn-outline flex-1" id="shareWechatBtn">
-                <i class="fa fa-weixin text-green-500 mr-1"></i> 微信
-            </button>
-            <button class="btn-outline flex-1" id="shareQQBtn">
-                <i class="fa fa-qq text-blue-500 mr-1"></i> QQ
-            </button>
-        </div>
     </div>
 </div>
 
@@ -292,7 +284,7 @@
                     <i class="fa fa-circle-o-notch fa-spin text-primary/50 text-2xl"></i>
                 </div>
                 <!-- 图片元素 -->
-                <img id="modalImage" class="modal-image opacity-0" alt="国家详情图">
+                <img id="modalImage" class="modal-image opacity-0" alt="国家面板详情图">
             </div>
             <!-- 缩略图导航区域 -->
             <div id="thumbnailNavigation" class="mt-4 flex flex-wrap justify-center gap-2"></div>
@@ -307,19 +299,7 @@
 
 <!-- 页脚 -->
 <footer class="bg-gray-900 text-gray-300 mt-12">
-    <div class="container mx-auto px-4 py-6">
-        <div class="flex flex-col md:flex-row justify-between items-center gap-4">
-            <p class="text-sm">© 2025 随机国家图片抽取工具 | 包含17个国家的精美图片</p>
-            <div class="flex gap-4">
-                <a href="#" class="text-gray-400 hover:text-white transition-colors text-sm">
-                    <i class="fa fa-question-circle mr-1"></i> 使用帮助
-                </a>
-                <a href="#" class="text-gray-400 hover:text-white transition-colors text-sm">
-                    <i class="fa fa-image mr-1"></i> 图片来源
-                </a>
-            </div>
-        </div>
-    </div>
+
 </footer>
 
 <!-- JavaScript -->
@@ -864,15 +844,6 @@
         }, 2000);
     });
 
-    // 微信分享（模拟）
-    shareWechatBtn.addEventListener('click', () => {
-        alert('请将链接发送给微信好友，或使用微信扫描二维码分享');
-    });
-
-    // QQ分享（模拟）
-    shareQQBtn.addEventListener('click', () => {
-        alert('请将链接发送给QQ好友');
-    });
 
     // 开始抽取函数
     function startDraw() {
