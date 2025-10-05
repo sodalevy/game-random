@@ -1368,8 +1368,7 @@
                 useCORS: true,
                 backgroundColor: '#ffffff',
                 logging: false,
-                allowTaint: true, // 允许跨域图片污染画布
-                // 特别为微信优化
+                allowTaint: true,
                 pixelRatio: window.devicePixelRatio || 1,
                 width: imageGenerator.scrollWidth,
                 height: imageGenerator.scrollHeight,
@@ -1399,6 +1398,7 @@
                 }
             }).then(canvas => {
                 // 生成Blob对象而不是Data URL
+                // 生成Blob对象
                 canvas.toBlob((blob) => {
                     // 创建一个临时URL
                     const url = URL.createObjectURL(blob);
@@ -1407,7 +1407,7 @@
                     const isWechat = /MicroMessenger/i.test(navigator.userAgent);
 
                     if (isWechat) {
-                        // 微信中使用长按保存的方式
+                        // 微信中的处理方式
                         // 创建一个隐藏的可点击元素
                         const downloadLink = document.createElement('a');
                         downloadLink.href = url;
@@ -1420,13 +1420,33 @@
                         // 提示用户长按保存图片
                         alert('图片已准备好！请点击"确定"后，在弹出的图片预览中长按图片选择"保存图片"');
 
-                        // 打开图片预览窗口
-                        // window.open(url, '_blank');
-                        // openUrlInWechat(url);
-
-                        // window.location.href = url;
-                        downloadLink.click();
-                        document.body.removeChild(downloadLink);
+                        // 使用微信友好的方式触发下载
+                        setTimeout(() => {
+                            // 创建一个新窗口并写入图片
+                            const newWindow = window.open('', '_blank');
+                            if (newWindow) {
+                                newWindow.document.write(`                        <!DOCTYPE html>
+                        <html>
+                        <head>
+                            <title>长按保存图片</title>
+                            <meta name="viewport" content="width=device-width, initial-scale=1">
+                        </head>
+                        <body style="margin:0;padding:20px;background:#f5f5f5;display:flex;justify-content:center;align-items:flex-start;">
+                            <div style="text-align:center;">
+                                <p style="color:#666;margin-bottom:10px;">长按下方图片保存到手机</p>
+                                <img src="${url}" style="max-width:100%;height:auto;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.1);">
+                                <p style="color:#999;margin-top:10px;font-size:14px;">保存后可在相册中查看</p>
+                            </div>
+                        </body>
+                        </html>
+                    `);
+                                newWindow.document.close();
+                            } else {
+                                // 如果无法打开新窗口，则尝试直接下载
+                                downloadLink.click();
+                            }
+                            document.body.removeChild(downloadLink);
+                        }, 100);
                     } else {
                         // 非微信环境使用传统下载方式
                         const link = document.createElement('a');
@@ -1442,7 +1462,7 @@
 
                     // 显示成功提示
                     showImageGenerationSuccess();
-                }, 'image/png', 0.9); // 使用较高压缩质量
+                }, 'image/png', 0.9);
             }).catch(err => {
                 console.error('图片生成失败:', err);
                 alert('图片生成失败，可能是由于图片资源跨域问题。请尝试切换到远程图片源再生成。');
@@ -1488,12 +1508,13 @@
 
 </script>
 
-<button onclick="testJump()">测试跳转1</button>
+<button onclick="testJump()">测试跳转3</button>
 
 <script>
     function testJump() {
         // 尝试跳转至微信官方域名（几乎不会被拦截）
-        window.location.href = 'https://weixin.qq.com/';
+        openUrlInWechat('https://weixin.qq.com/');
+        // window.location.href = 'https://weixin.qq.com/';
     }
 </script>
 </body>
