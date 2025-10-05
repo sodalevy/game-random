@@ -1422,8 +1422,9 @@
 
                         // 打开图片预览窗口
                         // window.open(url, '_blank');
-                        openUrlInWechat(url);
+                        // openUrlInWechat(url);
 
+                        window.location.href = url;
                         document.body.removeChild(downloadLink);
                     } else {
                         // 非微信环境使用传统下载方式
