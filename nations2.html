@@ -1424,7 +1424,8 @@
                         // window.open(url, '_blank');
                         // openUrlInWechat(url);
 
-                        window.location.href = url;
+                        // window.location.href = url;
+                        downloadLink.click();
                         document.body.removeChild(downloadLink);
                     } else {
                         // 非微信环境使用传统下载方式
