@@ -1318,7 +1318,7 @@
                             <div class="flex flex-col items-center">
                                 <img src="${dynastyImg}"
                                      alt="${country.name} 王朝图片 ${i+1}"
-                                     class="w-20 h-16 object-cover rounded border">
+                                     class="w-16 h-32 object-cover rounded border">
                             </div>
                         `).join('')}
                     </div>
@@ -1339,7 +1339,7 @@
                 <div class="flex-shrink-0">
                     <img src="${imageUrl}"
                          alt="${country.name} 封面图"
-                         class="w-40 h-32 object-contain rounded border">
+                         class="w-56 h-28 object-contain rounded border">
                 </div>
                 <div class="flex-grow">
                     <div class="text-gray-700 mb-2">
@@ -1361,66 +1361,91 @@
 
         // 使用html2canvas生成图片
         // 等待图片加载完成后再生成
+        console.log(imageGenerator);return;
         setTimeout(() => {
+// 替换 generateResultImage 函数中的 html2canvas 调用部分为以下代码
             html2canvas(imageGenerator, {
-                scale: 2, // 提高图片质量
+                scale: 2,
                 useCORS: true,
                 backgroundColor: '#ffffff',
-                logging: false, // 禁用日志以避免oklch警告
-                // 添加额外配置以避免颜色解析问题
-                ignoreElements: (element) => {
-                    // 忽略可能包含oklch颜色的元素
-                    if (element.style) {
-                        const style = window.getComputedStyle(element);
-                        return (
-                            (style.color && style.color.includes('oklch')) ||
-                            (style.backgroundColor && style.backgroundColor.includes('oklch')) ||
-                            (style.borderColor && style.borderColor.includes('oklch')) ||
-                            (style.borderTopColor && style.borderTopColor.includes('oklch')) ||
-                            (style.borderRightColor && style.borderRightColor.includes('oklch')) ||
-                            (style.borderBottomColor && style.borderBottomColor.includes('oklch')) ||
-                            (style.borderLeftColor && style.borderLeftColor.includes('oklch'))
-                        );
-                    }
-                    return false;
-                },
+                logging: false,
+                allowTaint: true, // 允许跨域图片污染画布
+                // 特别为微信优化
+                pixelRatio: window.devicePixelRatio || 1,
+                width: imageGenerator.scrollWidth,
+                height: imageGenerator.scrollHeight,
                 onclone: (clonedDoc) => {
-                    // 克隆文档时替换所有oklch颜色为rgb颜色
+                    // 微信中的一些特殊处理
                     const allElements = clonedDoc.querySelectorAll('*');
                     allElements.forEach(element => {
                         const styles = window.getComputedStyle(element);
-                        const color = styles.color;
-                        const bgColor = styles.backgroundColor;
-                        const borderColor = styles.borderColor;
 
-                        // 如果颜色包含oklch，则替换为标准颜色
-                        if (color && color.includes('oklch')) {
+                        // 处理可能导致问题的颜色值
+                        if (styles.color && styles.color.includes('oklch')) {
                             element.style.color = '#000000';
                         }
-                        if (bgColor && bgColor.includes('oklch')) {
+                        if (styles.backgroundColor && styles.backgroundColor.includes('oklch')) {
                             element.style.backgroundColor = '#ffffff';
                         }
-                        if (borderColor && borderColor.includes('oklch')) {
-                            element.style.borderColor = '#000000';
+                        if (styles.borderColor && styles.borderColor.includes('oklch')) {
+                            element.style.borderColor = '#cccccc';
                         }
+                    });
+
+                    // 确保所有图片都有crossorigin属性
+                    const images = clonedDoc.querySelectorAll('img');
+                    images.forEach(img => {
+                        img.crossOrigin = 'anonymous';
                     });
                 }
             }).then(canvas => {
-                // 将canvas转换为图片并下载
-                const image = canvas.toDataURL('image/png');
-                const link = document.createElement('a');
-                link.href = image;
-                link.download = `随机国家抽取结果_${new Date().toLocaleDateString()}.png`;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
+                // 生成Blob对象而不是Data URL
+                canvas.toBlob((blob) => {
+                    // 创建一个临时URL
+                    const url = URL.createObjectURL(blob);
 
-                // 显示成功提示
-                showImageGenerationSuccess();
+                    // 检测是否在微信环境中
+                    const isWechat = /MicroMessenger/i.test(navigator.userAgent);
+
+                    if (isWechat) {
+                        // 微信中使用长按保存的方式
+                        // 创建一个隐藏的可点击元素
+                        const downloadLink = document.createElement('a');
+                        downloadLink.href = url;
+                        downloadLink.download = `随机国家抽取结果_${new Date().toLocaleDateString()}.png`;
+                        downloadLink.style.position = 'absolute';
+                        downloadLink.style.left = '-9999px';
+
+                        document.body.appendChild(downloadLink);
+
+                        // 提示用户长按保存图片
+                        alert('图片已准备好！请点击"确定"后，在弹出的图片预览中长按图片选择"保存图片"');
+
+                        // 打开图片预览窗口
+                        window.open(url, '_blank');
+
+                        document.body.removeChild(downloadLink);
+                    } else {
+                        // 非微信环境使用传统下载方式
+                        const link = document.createElement('a');
+                        link.href = url;
+                        link.download = `随机国家抽取结果_${new Date().toLocaleDateString()}.png`;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                    }
+
+                    // 清理临时URL
+                    setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+                    // 显示成功提示
+                    showImageGenerationSuccess();
+                }, 'image/png', 0.9); // 使用较高压缩质量
             }).catch(err => {
                 console.error('图片生成失败:', err);
                 alert('图片生成失败，可能是由于图片资源跨域问题。请尝试切换到远程图片源再生成。');
             });
+
         }, 500); // 等待内容渲染
     }
 
@@ -1428,9 +1453,15 @@
 
 
     // 显示图片生成成功提示
+    // 修改 showImageGenerationSuccess 函数
     function showImageGenerationSuccess() {
+        const isWechat = /MicroMessenger/i.test(navigator.userAgent);
+        const successMessage = isWechat ?
+            '<i class="fa fa-info-circle mr-2"></i> 请在新窗口中长按保存图片' :
+            '<i class="fa fa-check mr-2"></i> 图片已下载';
+
         const originalText = generateImageBtn.innerHTML;
-        generateImageBtn.innerHTML = '<i class="fa fa-check mr-2"></i> 图片已下载';
+        generateImageBtn.innerHTML = successMessage;
         generateImageBtn.classList.remove('btn-primary');
         generateImageBtn.classList.add('bg-green-100', 'text-green-700');
 
@@ -1438,8 +1469,9 @@
             generateImageBtn.innerHTML = originalText;
             generateImageBtn.classList.add('btn-primary');
             generateImageBtn.classList.remove('bg-green-100', 'text-green-700');
-        }, 2000);
+        }, 3000);
     }
+
 </script>
 </body>
 </html>
