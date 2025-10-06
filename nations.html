@@ -8,6 +8,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- 引入Font Awesome -->
     <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <!-- 引入html2canvas -->
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
     <!-- 配置Tailwind -->
     <script>
@@ -263,6 +265,15 @@
                 <i class="fa fa-copy mr-1"></i> 复制
             </button>
         </div>
+        <!-- 添加生成图片按钮 -->
+        <div class="mt-4 pt-4 border-t border-gray-200">
+            <button id="generateImageBtn" class="w-full btn-primary">
+                <i class="fa fa-image mr-2"></i> 生成结果图片
+            </button>
+            <p class="mt-2 text-xs text-gray-500 text-center">
+                生成包含所有国家信息的图片，可长按保存
+            </p>
+        </div>
     </div>
 </div>
 
@@ -297,9 +308,25 @@
     </div>
 </div>
 
+<!-- 图片生成器容器 -->
+<div id="imageGenerator" class="fixed -top-full -left-full bg-white p-6 rounded-xl shadow-lg" style="width: 600px; max-width: 90vw;">
+    <div class="text-center mb-4">
+        <h2 class="text-2xl font-bold text-gray-800">随机国家抽取结果</h2>
+        <p class="text-gray-600">玩家数量: <span id="genPlayerCount">0</span></p>
+    </div>
+
+    <div id="generatedCountries" class="space-y-6">
+        <!-- 国家信息将在这里动态生成 -->
+    </div>
+
+    <div class="mt-6 text-center text-sm text-gray-500">
+        <p>长按或右键点击图片可保存到设备</p>
+        <p class="mt-1">© 2025 随机国家图片抽取工具</p>
+    </div>
+</div>
+
 <!-- 页脚 -->
 <footer class="bg-gray-900 text-gray-300 mt-12">
-
 </footer>
 
 <!-- JavaScript -->
@@ -479,6 +506,11 @@
     const modalImageLoader = document.getElementById('modalImageLoader');
     const modalImageError = document.getElementById('modalImageError');
     const thumbnailNavigation = document.getElementById('thumbnailNavigation');
+    // 图片生成相关元素
+    const generateImageBtn = document.getElementById('generateImageBtn');
+    const imageGenerator = document.getElementById('imageGenerator');
+    const genPlayerCount = document.getElementById('genPlayerCount');
+    const generatedCountries = document.getElementById('generatedCountries');
 
     // 状态变量
     let selectedPlayerCount = 1;
@@ -553,6 +585,11 @@
 
         // 绑定图片模态框事件
         bindImageModalEvents();
+
+        // 绑定生成图片事件
+        if (generateImageBtn) {
+            generateImageBtn.addEventListener('click', generateResultImage);
+        }
     });
 
     // 初始化人数选择按钮
@@ -1223,16 +1260,249 @@
         }
         return Math.abs(hash);
     };
-</script>
 
-<script>
-    var _hmt = _hmt || [];
-    (function() {
-        var hm = document.createElement("script");
-        hm.src = "https://hm.baidu.com/hm.js?48d1a3725fd4ddb5c485a5d24702815d";
-        var s = document.getElementsByTagName("script")[0];
-        s.parentNode.insertBefore(hm, s);
-    })();
+    //  替换整个 generateResultImage 函数为以下代码
+    function generateResultImage() {
+        if (drawnCountries.length === 0) return;
+
+        // 填充生成器内容
+        genPlayerCount.textContent = selectedPlayerCount;
+        generatedCountries.innerHTML = '';
+
+        // 为每个国家创建内容
+        drawnCountries.forEach((country, index) => {
+            const countryDiv = document.createElement('div');
+            countryDiv.className = 'border border-gray-200 rounded-lg p-4';
+
+            // 获取当前图片来源的URL
+            const imageUrl = getCountryImageUrl(country);
+
+            // 构建王朝图片HTML
+            let dynastyImagesHtml = '';
+            if (country.dynasties && country.dynasties.length > 0) {
+                dynastyImagesHtml = `
+                <div class="mt-3">
+                    <div class="text-sm font-medium text-gray-700 mb-2">王朝图片:</div>
+                    <div class="flex flex-wrap gap-2">
+                        ${country.dynasties.map((dynastyImg, i) => `
+                            <div class="flex flex-col items-center">
+                                <img src="${dynastyImg}"
+                                     alt="${country.name} 王朝图片 ${i+1}"
+                                     class="w-64 h-100 object-cover rounded border">
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+            }
+
+            countryDiv.innerHTML = `
+            <div class="flex items-center mb-3">
+                <span class="text-lg mr-2">${country.flag}</span>
+                <h3 class="text-xl font-bold text-gray-800">${country.name}</h3>
+                <span class="ml-auto bg-blue-600 text-white text-sm font-medium px-2 py-1 rounded">
+                    玩家 ${index + 1}
+                </span>
+            </div>
+
+            <div class="flex flex-col md:flex-row gap-4">
+                <div class="flex-shrink-0">
+                    <img src="${imageUrl}"
+                         alt="${country.name} 封面图"
+                         class="w-512 256 object-contain rounded border">
+                </div>
+                <div class="flex-grow">
+                    <div class="text-gray-700 mb-2">
+                        <p><strong>国家ID:</strong> ${country.id}</p>
+                    </div>
+                    ${dynastyImagesHtml}
+                </div>
+            </div>
+        `;
+
+            generatedCountries.appendChild(countryDiv);
+        });
+
+        // 为所有图片元素添加 crossorigin 属性
+        const imgElements = generatedCountries.querySelectorAll('img');
+        imgElements.forEach(img => {
+            img.crossOrigin = 'anonymous';
+        });
+
+        // 使用html2canvas生成图片
+        // 等待图片加载完成后再生成
+        setTimeout(() => {
+            html2canvas(imageGenerator, {
+                scale: 2,
+                useCORS: true,
+                backgroundColor: '#ffffff',
+                logging: false,
+                allowTaint: true,
+                pixelRatio: window.devicePixelRatio || 1,
+                width: imageGenerator.scrollWidth,
+                height: imageGenerator.scrollHeight,
+                onclone: (clonedDoc) => {
+                    // 微信中的一些特殊处理
+                    const allElements = clonedDoc.querySelectorAll('*');
+                    allElements.forEach(element => {
+                        const styles = window.getComputedStyle(element);
+
+                        // 处理可能导致问题的颜色值
+                        if (styles.color && styles.color.includes('oklch')) {
+                            element.style.color = '#000000';
+                        }
+                        if (styles.backgroundColor && styles.backgroundColor.includes('oklch')) {
+                            element.style.backgroundColor = '#ffffff';
+                        }
+                        if (styles.borderColor && styles.borderColor.includes('oklch')) {
+                            element.style.borderColor = '#cccccc';
+                        }
+                    });
+
+                    // 确保所有图片都有crossorigin属性
+                    const images = clonedDoc.querySelectorAll('img');
+                    images.forEach(img => {
+                        img.crossOrigin = 'anonymous';
+                    });
+                }
+            }).then(canvas => {
+                // 检测是否在微信环境中
+                const isWechat = /MicroMessenger/i.test(navigator.userAgent);
+
+                if (isWechat) {
+                    // 微信特殊处理：直接显示图片供用户长按保存
+                    const dataUrl = canvas.toDataURL('image/png', 0.9);
+
+                    // 创建一个模态框显示图片
+                    const modal = document.createElement('div');
+                    modal.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0,0,0,0.8);
+                    z-index: 10000;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: center;
+                    align-items: center;
+                `;
+
+                    const content = document.createElement('div');
+                    content.style.cssText = `
+                    background: white;
+                    border-radius: 10px;
+                    padding: 20px;
+                    max-width: 90%;
+                    max-height: 80%;
+                    text-align: center;
+                `;
+
+                    const title = document.createElement('h3');
+                    title.textContent = '长按图片保存到手机';
+                    title.style.cssText = `
+                    margin-top: 0;
+                    margin-bottom: 15px;
+                    color: #333;
+                `;
+
+                    const img = document.createElement('img');
+                    img.src = dataUrl;
+                    img.style.cssText = `
+                    max-width: 100%;
+                    max-height: 70vh;
+                    border-radius: 8px;
+                `;
+
+                    const closeBtn = document.createElement('button');
+                    closeBtn.textContent = '关闭';
+                    closeBtn.style.cssText = `
+                    margin-top: 15px;
+                    padding: 10px 20px;
+                    background: #2563EB;
+                    color: white;
+                    border: none;
+                    border-radius: 5px;
+                    cursor: pointer;
+                `;
+
+                    closeBtn.onclick = () => {
+                        document.body.removeChild(modal);
+                    };
+
+                    content.appendChild(title);
+                    content.appendChild(img);
+                    content.appendChild(closeBtn);
+                    modal.appendChild(content);
+                    document.body.appendChild(modal);
+
+                    // 显示成功提示
+                    showImageGenerationSuccess();
+                } else {
+                    // 非微信环境使用传统下载方式
+                    canvas.toBlob((blob) => {
+                        // 创建一个临时URL
+                        const url = URL.createObjectURL(blob);
+
+                        const link = document.createElement('a');
+                        link.href = url;
+                        link.download = `随机国家抽取结果_${new Date().toLocaleDateString()}.png`;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+
+                        // 清理临时URL
+                        setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+                        // 显示成功提示
+                        showImageGenerationSuccess();
+                    }, 'image/png', 0.9);
+                }
+            }).catch(err => {
+                console.error('图片生成失败:', err);
+                alert('图片生成失败，可能是由于图片资源跨域问题。请尝试切换到远程图片源再生成。');
+            });
+
+        }, 500); // 等待内容渲染
+    }
+
+
+
+
+
+    // 显示图片生成成功提示
+    // 修改 showImageGenerationSuccess 函数
+    function showImageGenerationSuccess() {
+        const isWechat = /MicroMessenger/i.test(navigator.userAgent);
+        const successMessage = isWechat ?
+            '<i class="fa fa-info-circle mr-2"></i> 请在新窗口中长按保存图片' :
+            '<i class="fa fa-check mr-2"></i> 图片已下载';
+
+        const originalText = generateImageBtn.innerHTML;
+        generateImageBtn.innerHTML = successMessage;
+        generateImageBtn.classList.remove('btn-primary');
+        generateImageBtn.classList.add('bg-green-100', 'text-green-700');
+
+        setTimeout(() => {
+            generateImageBtn.innerHTML = originalText;
+            generateImageBtn.classList.add('btn-primary');
+            generateImageBtn.classList.remove('bg-green-100', 'text-green-700');
+        }, 3000);
+    }
+
+    function openUrlInWechat(url) {
+        // 创建一个隐藏的 a 标签
+        const a = document.createElement('a');
+        a.href = url;
+        a.target = '_blank'; // 尝试在新窗口打开（微信可能仍会在当前窗口打开，但能跳转）
+        // 触发点击
+        document.body.appendChild(a);
+        a.click();
+        // 移除临时标签
+        document.body.removeChild(a);
+    }
+
 </script>
 
 </body>
