@@ -1362,7 +1362,6 @@
         // 使用html2canvas生成图片
         // 等待图片加载完成后再生成
         setTimeout(() => {
-// 替换 generateResultImage 函数中的 html2canvas 调用部分为以下代码
             html2canvas(imageGenerator, {
                 scale: 2,
                 useCORS: true,
@@ -1397,72 +1396,99 @@
                     });
                 }
             }).then(canvas => {
-                // 生成Blob对象而不是Data URL
-                // 生成Blob对象
-                canvas.toBlob((blob) => {
-                    // 创建一个临时URL
-                    const url = URL.createObjectURL(blob);
+                // 检测是否在微信环境中
+                const isWechat = /MicroMessenger/i.test(navigator.userAgent);
 
-                    // 检测是否在微信环境中
-                    const isWechat = /MicroMessenger/i.test(navigator.userAgent);
+                if (isWechat) {
+                    // 微信特殊处理：直接显示图片供用户长按保存
+                    const dataUrl = canvas.toDataURL('image/png', 0.9);
 
-                    if (isWechat) {
-                        // 微信中的处理方式
-                        // 创建一个隐藏的可点击元素
-                        const downloadLink = document.createElement('a');
-                        downloadLink.href = url;
-                        downloadLink.download = `随机国家抽取结果_${new Date().toLocaleDateString()}.png`;
-                        downloadLink.style.position = 'absolute';
-                        downloadLink.style.left = '-9999px';
+                    // 创建一个模态框显示图片
+                    const modal = document.createElement('div');
+                    modal.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0,0,0,0.8);
+                    z-index: 10000;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: center;
+                    align-items: center;
+                `;
 
-                        document.body.appendChild(downloadLink);
+                    const content = document.createElement('div');
+                    content.style.cssText = `
+                    background: white;
+                    border-radius: 10px;
+                    padding: 20px;
+                    max-width: 90%;
+                    max-height: 80%;
+                    text-align: center;
+                `;
 
-                        // 提示用户长按保存图片
-                        alert('图片已准备好！请点击"确定"后，在弹出的图片预览中长按图片选择"保存图片"');
+                    const title = document.createElement('h3');
+                    title.textContent = '长按图片保存到手机';
+                    title.style.cssText = `
+                    margin-top: 0;
+                    margin-bottom: 15px;
+                    color: #333;
+                `;
 
-                        // 使用微信友好的方式触发下载
-                        setTimeout(() => {
-                            // 创建一个新窗口并写入图片
-                            const newWindow = window.open('', '_blank');
-                            if (newWindow) {
-                                newWindow.document.write(`                        <!DOCTYPE html>
-                        <html>
-                        <head>
-                            <title>长按保存图片</title>
-                            <meta name="viewport" content="width=device-width, initial-scale=1">
-                        </head>
-                        <body style="margin:0;padding:20px;background:#f5f5f5;display:flex;justify-content:center;align-items:flex-start;">
-                            <div style="text-align:center;">
-                                <p style="color:#666;margin-bottom:10px;">长按下方图片保存到手机</p>
-                                <img src="${url}" style="max-width:100%;height:auto;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.1);">
-                                <p style="color:#999;margin-top:10px;font-size:14px;">保存后可在相册中查看</p>
-                            </div>
-                        </body>
-                        </html>
-                    `);
-                                newWindow.document.close();
-                            } else {
-                                // 如果无法打开新窗口，则尝试直接下载
-                                downloadLink.click();
-                            }
-                            document.body.removeChild(downloadLink);
-                        }, 100);
-                    } else {
-                        // 非微信环境使用传统下载方式
+                    const img = document.createElement('img');
+                    img.src = dataUrl;
+                    img.style.cssText = `
+                    max-width: 100%;
+                    max-height: 70vh;
+                    border-radius: 8px;
+                `;
+
+                    const closeBtn = document.createElement('button');
+                    closeBtn.textContent = '关闭';
+                    closeBtn.style.cssText = `
+                    margin-top: 15px;
+                    padding: 10px 20px;
+                    background: #2563EB;
+                    color: white;
+                    border: none;
+                    border-radius: 5px;
+                    cursor: pointer;
+                `;
+
+                    closeBtn.onclick = () => {
+                        document.body.removeChild(modal);
+                    };
+
+                    content.appendChild(title);
+                    content.appendChild(img);
+                    content.appendChild(closeBtn);
+                    modal.appendChild(content);
+                    document.body.appendChild(modal);
+
+                    // 显示成功提示
+                    showImageGenerationSuccess();
+                } else {
+                    // 非微信环境使用传统下载方式
+                    canvas.toBlob((blob) => {
+                        // 创建一个临时URL
+                        const url = URL.createObjectURL(blob);
+
                         const link = document.createElement('a');
                         link.href = url;
                         link.download = `随机国家抽取结果_${new Date().toLocaleDateString()}.png`;
                         document.body.appendChild(link);
                         link.click();
                         document.body.removeChild(link);
-                    }
 
-                    // 清理临时URL
-                    setTimeout(() => URL.revokeObjectURL(url), 1000);
+                        // 清理临时URL
+                        setTimeout(() => URL.revokeObjectURL(url), 1000);
 
-                    // 显示成功提示
-                    showImageGenerationSuccess();
-                }, 'image/png', 0.9);
+                        // 显示成功提示
+                        showImageGenerationSuccess();
+                    }, 'image/png', 0.9);
+                }
             }).catch(err => {
                 console.error('图片生成失败:', err);
                 alert('图片生成失败，可能是由于图片资源跨域问题。请尝试切换到远程图片源再生成。');
@@ -1470,6 +1496,7 @@
 
         }, 500); // 等待内容渲染
     }
+
 
 
 
@@ -1508,7 +1535,7 @@
 
 </script>
 
-<button onclick="testJump()">测试跳转3</button>
+<button onclick="testJump()">测试跳转4</button>
 
 <script>
     function testJump() {
