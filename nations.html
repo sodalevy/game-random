@@ -112,14 +112,17 @@
                 国家玩家面板抽取
             </h1>
             <div class="flex items-center gap-3">
+                <span id="countryCount" class="text-sm text-secondary bg-gray-100 px-3 py-1.5 rounded-full">
+                    国家库: <span id="availableCountriesCount">17</span>个
+                </span>
                 <!-- 新增：图片来源配置按钮 -->
                 <div class="relative" id="imageConfigWrapper">
-                    <button id="imageConfigBtn" class="config-btn">
+                    <button id="imageConfigBtn" class="config-btn" aria-haspopup="true" aria-expanded="false">
                         <i class="fa fa-picture-o text-lg"></i>
                         <span class="config-badge"></span>
                     </button>
-                    <!-- 图片来源下拉菜单 -->
-                    <div id="imageConfigMenu" class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-1 hidden z-40">
+                    <!-- 图片来源下拉菜单 - 修改定位和动画 -->
+                    <div id="imageConfigMenu" class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-1 hidden z-40 transition-all duration-200 transform origin-top-right">
                         <label class="block px-4 py-2 text-sm text-gray-700 font-medium">图片来源</label>
                         <div class="px-2 py-1">
                             <label class="flex items-center px-2 py-2 rounded hover:bg-gray-100 cursor-pointer">
@@ -133,10 +136,6 @@
                         </div>
                     </div>
                 </div>
-
-                <span id="countryCount" class="text-sm text-secondary bg-gray-100 px-3 py-1.5 rounded-full">
-                    国家库: <span id="availableCountriesCount">17</span>个
-                </span>
                 <button id="resetBtn" class="btn-outline text-sm">
                     <i class="fa fa-refresh mr-1"></i> 重置
                 </button>
@@ -186,6 +185,15 @@
                 <p class="mt-2 text-xs text-gray-400 text-center">
                     每次抽取将从可用国家中随机选择对应人数的不同国家
                 </p>
+            </div>
+            <!-- 添加提示信息 -->
+            <div class="flex flex-col justify-end">
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm">
+                    <p class="text-blue-800 flex items-start">
+                        <i class="fa fa-info-circle mt-0.5 mr-2 flex-shrink-0"></i>
+                        <span>如需生成图片结果，需使用本地图源</span>
+                    </p>
+                </div>
             </div>
         </div>
     </section>
@@ -697,10 +705,26 @@
     }
 
     // 新增：绑定图片来源切换事件
+    // 修改 bindImageSourceChangeEvent 函数
     function bindImageSourceChangeEvent() {
         imageConfigBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            imageConfigMenu.classList.toggle('hidden');
+            const isHidden = imageConfigMenu.classList.contains('hidden');
+
+            // 更新按钮的 aria-expanded 状态
+            imageConfigBtn.setAttribute('aria-expanded', isHidden);
+
+            if (isHidden) {
+                // 显示菜单时添加动画效果
+                imageConfigMenu.classList.remove('hidden');
+                setTimeout(() => {
+                    imageConfigMenu.style.transform = 'scale(1)';
+                    imageConfigMenu.style.opacity = '1';
+                }, 10);
+            } else {
+                // 隐藏菜单时添加动画效果
+                hideImageConfigMenu();
+            }
         });
 
         imageSourceRadios.forEach(radio => {
@@ -715,6 +739,11 @@
 
                 // 更新URL参数（如果已有结果）
                 updateUrlParams();
+
+                // 选择后自动隐藏菜单
+                setTimeout(() => {
+                    hideImageConfigMenu();
+                }, 150);
             });
         });
 
@@ -722,10 +751,24 @@
         document.addEventListener('click', (e) => {
             // 检查点击是否在配置菜单内部
             if (!imageConfigWrapper.contains(e.target) && e.target !== imageConfigBtn) {
-                imageConfigMenu.classList.add('hidden');
+                hideImageConfigMenu();
             }
         });
     }
+
+    // 新增隐藏菜单的函数，带动画效果
+    function hideImageConfigMenu() {
+        if (!imageConfigMenu.classList.contains('hidden')) {
+            imageConfigMenu.style.transform = 'scale(0.95)';
+            imageConfigMenu.style.opacity = '0';
+            imageConfigBtn.setAttribute('aria-expanded', 'false');
+
+            setTimeout(() => {
+                imageConfigMenu.classList.add('hidden');
+            }, 200);
+        }
+    }
+
 
     // 新增：绑定图片模态框事件
     function bindImageModalEvents() {
