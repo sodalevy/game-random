@@ -135,7 +135,7 @@
                 </div>
 
                 <span id="countryCount" class="text-sm text-secondary bg-gray-100 px-3 py-1.5 rounded-full">
-                    国家库: 17个
+                    国家库: <span id="availableCountriesCount">17</span>个
                 </span>
                 <button id="resetBtn" class="btn-outline text-sm">
                     <i class="fa fa-refresh mr-1"></i> 重置
@@ -166,13 +166,25 @@
                 <p id="playerTip" class="mt-2 text-sm text-gray-500">请选择需要分配国家的玩家人数</p>
             </div>
 
+            <!-- 禁用国家选项 -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">排除国家</label>
+                <div class="flex flex-wrap gap-2">
+                    <label class="inline-flex items-center">
+                        <input type="checkbox" id="disableKorea" class="rounded text-primary focus:ring-primary" checked>
+                        <span class="ml-2">韩国</span>
+                    </label>
+                </div>
+                <p class="mt-2 text-sm text-gray-500">选择要排除的国家</p>
+            </div>
+
             <!-- 操作按钮 -->
             <div class="flex flex-col justify-end">
                 <button id="drawBtn" class="btn-primary w-full">
                     <i class="fa fa-random"></i> 开始随机抽取
                 </button>
                 <p class="mt-2 text-xs text-gray-400 text-center">
-                    每次抽取将从17个国家中随机选择对应人数的不同国家
+                    每次抽取将从可用国家中随机选择对应人数的不同国家
                 </p>
             </div>
         </div>
@@ -215,7 +227,7 @@
             <p class="text-gray-500 mb-6">请在上方选择玩家人数并点击"开始随机抽取"按钮</p>
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 max-w-md mx-auto">
                 <div class="bg-gray-100 rounded-lg p-3 text-center text-sm">
-                    <div class="font-medium">17</div>
+                    <div class="font-medium" id="initialCountryCount">17</div>
                     <div class="text-xs text-gray-500">可选国家</div>
                 </div>
                 <div class="bg-gray-100 rounded-lg p-3 text-center text-sm">
@@ -327,19 +339,6 @@
 
 <!-- 页脚 -->
 <footer class="bg-gray-900 text-gray-300 mt-12">
-    <div class="container mx-auto px-4 py-6">
-        <div class="flex flex-col md:flex-row justify-between items-center gap-4">
-            <p class="text-sm">© 2025 随机国家图片抽取工具 | 包含17个国家的精美图片</p>
-            <div class="flex gap-4">
-                <a href="#" class="text-gray-400 hover:text-white transition-colors text-sm">
-                    <i class="fa fa-question-circle mr-1"></i> 使用帮助
-                </a>
-                <a href="#" class="text-gray-400 hover:text-white transition-colors text-sm">
-                    <i class="fa fa-image mr-1"></i> 图片来源
-                </a>
-            </div>
-        </div>
-    </div>
 </footer>
 
 <!-- JavaScript -->
@@ -503,7 +502,6 @@
     const shareUrl = document.getElementById('shareUrl');
     const copyUrlBtn = document.getElementById('copyUrlBtn');
     const shareWechatBtn = document.getElementById('shareWechatBtn');
-    const shareQQBtn = document.getElementById('shareQQBtn');
     // 新增：图片配置相关元素
     const imageConfigBtn = document.getElementById('imageConfigBtn');
     const imageConfigMenu = document.getElementById('imageConfigMenu');
@@ -524,6 +522,11 @@
     const imageGenerator = document.getElementById('imageGenerator');
     const genPlayerCount = document.getElementById('genPlayerCount');
     const generatedCountries = document.getElementById('generatedCountries');
+    // 新增：禁用国家相关元素
+    const disableKorea = document.getElementById('disableKorea');
+    const countryCount = document.getElementById('countryCount');
+    const availableCountriesCount = document.getElementById('availableCountriesCount');
+    const initialCountryCount = document.getElementById('initialCountryCount');
 
     // 状态变量
     let selectedPlayerCount = 1;
@@ -531,6 +534,8 @@
     let currentSeed = null; // 用于生成随机数的种子
     let currentImageSourceType = 'image'; // 默认为image，可切换为localImg
     let currentModalCountry = null; // 当前模态框显示的国家
+    let disabledCountries = null; // 默认禁用韩国 (id: 5)
+
 
     // 初始化页面
     document.addEventListener('DOMContentLoaded', () => {
@@ -540,6 +545,33 @@
         const countParam = params.get('count');
         const seedParam = params.get('seed');
         const imageSourceParam = params.get('imageSource'); // 新增：图片来源参数
+        const disabledParam = params.get('disabled'); // 新增：禁用国家参数
+
+        // 初始化禁用国家
+        if (disabledParam !== null) {
+            // 当明确传递了disabled参数时（即使是空字符串）
+            if (disabledParam === '') {
+                // 参数为空字符串，表示不禁用任何国家
+                disabledCountries = new Set();
+                disableKorea.checked = false;
+            } else {
+                // 参数包含具体值，按原逻辑处理
+                try {
+                    disabledCountries = new Set(disabledParam.split(',').map(Number));
+                    disableKorea.checked = disabledCountries.has(5);
+                } catch (e) {
+                    console.error('解析禁用国家参数失败:', e);
+                    disabledCountries = new Set([5]);
+                    disableKorea.checked = true;
+                }
+            }
+        } else {
+            // 未传递disabled参数，使用默认值（禁用韩国）
+            disabledCountries = new Set([5]);
+            disableKorea.checked = true;
+        }
+
+        updateAvailableCountriesCount();
 
         // 初始化图片来源（优先从URL参数获取，否则用默认值）
         if (imageSourceParam && ['image', 'localImg'].includes(imageSourceParam)) {
@@ -600,6 +632,9 @@
         // 显示初始状态
         initialState.classList.remove('hidden');
 
+        // 绑定禁用国家事件
+        disableKoreaAddEventListener();
+
         // 绑定图片来源切换事件
         bindImageSourceChangeEvent();
 
@@ -640,6 +675,27 @@
         });
     });
 
+    function disableKoreaAddEventListener(){
+        disableKorea.addEventListener('change', () => {
+            if (disableKorea.checked) {
+                disabledCountries.add(5); // 添加韩国到禁用列表
+            } else {
+                disabledCountries.delete(5); // 从禁用列表中移除韩国
+            }
+            updateAvailableCountriesCount();
+
+            // 更新URL参数
+            updateUrlParams();
+        });
+    }
+
+    // 新增：更新可用国家数量显示
+    function updateAvailableCountriesCount() {
+        const availableCount = countryDatabase.length - disabledCountries.size;
+        availableCountriesCount.textContent = availableCount;
+        initialCountryCount.textContent = availableCount;
+    }
+
     // 新增：绑定图片来源切换事件
     function bindImageSourceChangeEvent() {
         imageConfigBtn.addEventListener('click', (e) => {
@@ -658,11 +714,7 @@
                 }
 
                 // 更新URL参数（如果已有结果）
-                if (currentSeed) {
-                    const url = new URL(window.location.href);
-                    url.searchParams.set('imageSource', currentImageSourceType);
-                    history.pushState({}, document.title, url.toString());
-                }
+                updateUrlParams();
             });
         });
 
@@ -810,6 +862,7 @@
         return country[currentImageSourceType] || country.image; // 降级方案：优先当前来源，否则用默认图
     }
 
+    disableKoreaAddEventListener();
     // 抽取逻辑
     drawBtn.addEventListener('click', startDraw);
     redrawBtn.addEventListener('click', startDraw);
@@ -832,6 +885,11 @@
         playerTip.textContent = "请选择需要分配国家的玩家人数";
         playerTip.classList.remove('text-primary');
 
+        // 重置禁用国家选项（默认禁用韩国）
+        disabledCountries = new Set([5]);
+        disableKorea.checked = true;
+        updateAvailableCountriesCount();
+
         // 显示初始状态，隐藏结果
         resultSection.classList.add('hidden');
         initialState.classList.remove('hidden');
@@ -851,6 +909,7 @@
         url.searchParams.delete('count');
         url.searchParams.delete('seed');
         url.searchParams.delete('imageSource'); // 移除图片来源参数
+        url.searchParams.delete('disabled'); // 移除禁用国家参数
         history.pushState({}, document.title, url.toString());
     });
 
@@ -865,6 +924,7 @@
         url.searchParams.set('count', selectedPlayerCount);
         url.searchParams.set('seed', currentSeed);
         url.searchParams.set('imageSource', currentImageSourceType); // 新增：添加图片来源参数
+        url.searchParams.set('disabled', Array.from(disabledCountries).join(',')); // 新增：添加禁用国家参数
 
         // 设置分享链接
         shareUrl.value = url.toString();
@@ -901,12 +961,36 @@
         }, 2000);
     });
 
+    // 更新URL参数
+    function updateUrlParams() {
+        if (currentSeed) {
+            const countryIds = drawnCountries.map(c => c.id).join(',');
+            const url = new URL(window.location.href);
+            url.searchParams.set('countries', countryIds);
+            url.searchParams.set('count', selectedPlayerCount);
+            url.searchParams.set('seed', currentSeed);
+            url.searchParams.set('imageSource', currentImageSourceType);
+            url.searchParams.set('disabled', Array.from(disabledCountries).join(','));
+            history.pushState({}, document.title, url.toString());
+        }
+    }
 
     // 开始抽取函数
     function startDraw() {
         // 验证选择的人数
         if (selectedPlayerCount < 1 || selectedPlayerCount > 5) {
             playerTip.textContent = "请选择1-5人的有效人数";
+            playerTip.classList.add('text-red-500', 'animate-pulse-slow');
+            setTimeout(() => {
+                playerTip.classList.remove('animate-pulse-slow');
+            }, 1000);
+            return;
+        }
+
+        // 检查可用国家数量是否足够
+        const availableCountries = countryDatabase.filter(country => !disabledCountries.has(country.id));
+        if (selectedPlayerCount > availableCountries.length) {
+            playerTip.textContent = `可选国家不足！当前需要${selectedPlayerCount}个，但只有${availableCountries.length}个可用`;
             playerTip.classList.add('text-red-500', 'animate-pulse-slow');
             setTimeout(() => {
                 playerTip.classList.remove('animate-pulse-slow');
@@ -948,14 +1032,8 @@
                 setTimeout(() => {
                     generateDrawResult();
 
-                    // 更新URL参数（包含图片来源）
-                    const countryIds = drawnCountries.map(c => c.id).join(',');
-                    const url = new URL(window.location.href);
-                    url.searchParams.set('countries', countryIds);
-                    url.searchParams.set('count', selectedPlayerCount);
-                    url.searchParams.set('seed', currentSeed);
-                    url.searchParams.set('imageSource', currentImageSourceType); // 新增：添加图片来源参数
-                    history.pushState({}, document.title, url.toString());
+                    // 更新URL参数（包含图片来源和禁用国家）
+                    updateUrlParams();
                 }, 500);
             }
         }, stepDuration);
@@ -1248,8 +1326,10 @@
 
     // 从国家库中获取指定数量的随机不同国家
     function getRandomCountries(count) {
-        // 复制国家库以避免修改原数组
-        const countryPool = [...countryDatabase];
+        // 过滤掉被禁用的国家
+        const countryPool = countryDatabase.filter(country => !disabledCountries.has(country.id));
+        console.log(countryPool);
+        console.log(disabledCountries);
         const selectedCountries = [];
 
         // 创建基于当前种子的随机数生成器
@@ -1308,7 +1388,7 @@
                             <div class="flex flex-col items-center">
                                 <img src="${dynastyImg}"
                                      alt="${country.name} 王朝图片 ${i+1}"
-                                     class="w-64 h-100 object-cover rounded border">
+                                     class="w-32 h-50 object-cover rounded border">
                             </div>
                         `).join('')}
                     </div>
@@ -1486,10 +1566,6 @@
 
         }, 500); // 等待内容渲染
     }
-
-
-
-
 
     // 显示图片生成成功提示
     // 修改 showImageGenerationSuccess 函数
