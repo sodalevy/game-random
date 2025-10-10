@@ -294,6 +294,13 @@
         </table>
     </div>
 
+    <!-- 在科技板块B区域上方添加科技板块C区域 -->
+    <div class="images hidden" id="techTileCSection">
+        <table>
+            <tr id="techTileCRow"></tr>
+        </table>
+    </div>
+
     <!-- 科技板块B区域 -->
     <div class="images" id="techTileBSection">
         <table>
@@ -363,6 +370,7 @@
                     <div class="background-container">
                         <img id="lfScoringExtensionImg" style="max-width:300px; height:auto;width:100%;" alt="Scoring Extension">
                         <img id="coringImg" class="overlay-image-coring">
+                        <img id="researchImg" style="max-width: 65px;height:auto;position: absolute;top: 1px;left;right: 1px;">
                     </div>
                 </td>
             </tr>
@@ -690,7 +698,6 @@
             }
         });
 
-
         // 更新Lost Fleet扩展区域
         const lostFleetSection = document.getElementById('lostFleetSection');
         if (data.lost_fleet === 1) {
@@ -723,9 +730,13 @@
                 artContainer.appendChild(img);
             });
 
+            const researchImg = Math.random() > 0.5 ? 'EconomicResearch_A.jpeg' : 'EconomicResearch_B.jpeg';
+
+
             // 更新评分扩展和coring
             document.getElementById('lfScoringExtensionImg').src = `doc/gaia/${data.lfScoringExtension}`;
             document.getElementById('coringImg').src = `doc/gaia/${data.coring}`;
+            document.getElementById('researchImg').src = `doc/gaia/${researchImg}`;
         } else {
             lostFleetSection.classList.add('hidden');
         }
