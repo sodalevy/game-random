@@ -502,7 +502,9 @@
                 art: art,
                 player: player,
                 lost_fleet: lostFleet,
-                lfScoringExtension: player > 2 ? 'LFScoringExtension34.jpg' : 'LFScoringExtension12.jpg'
+                lfScoringExtension: player > 2 ?
+                    (Math.random() > 0.5 ? 'LFScoringExtension34.jpg' : 'LFScoringExtension12.jpg') :
+                    'LFScoringExtension12.jpg'
             };
         }
 
