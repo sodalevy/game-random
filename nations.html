@@ -1425,13 +1425,13 @@
             if (country.dynasties && country.dynasties.length > 0) {
                 dynastyImagesHtml = `
                 <div class="mt-3">
-                    <div class="text-sm font-medium text-gray-700 mb-2">王朝图片:</div>
+<!--                    <div class="text-sm font-medium text-gray-700 mb-2">王朝图片:</div>-->
                     <div class="flex flex-wrap gap-2">
                         ${country.dynasties.map((dynastyImg, i) => `
                             <div class="flex flex-col items-center">
                                 <img src="${dynastyImg}"
                                      alt="${country.name} 王朝图片 ${i+1}"
-                                     class="w-32 h-50 object-cover rounded border">
+                                     class="w-16 h-25 object-cover rounded border">
                             </div>
                         `).join('')}
                     </div>
@@ -1443,9 +1443,9 @@
             <div class="flex items-center mb-3">
                 <span class="text-lg mr-2">${country.flag}</span>
                 <h3 class="text-xl font-bold text-gray-800">${country.name}</h3>
-                <span class="ml-auto bg-blue-600 text-white text-sm font-medium px-2 py-1 rounded">
-                    玩家 ${index + 1}
-                </span>
+<!--                <span class="ml-auto bg-blue-600 text-white text-sm font-medium px-2 py-1 rounded">-->
+<!--                    玩家$index + 1 -->
+<!--                </span>-->
             </div>
 
             <div class="flex flex-col md:flex-row gap-4">
@@ -1455,9 +1455,9 @@
                          class="w-560 h-420 object-contain rounded border">
                 </div>
                 <div class="flex-grow">
-                    <div class="text-gray-700 mb-2">
-                        <p><strong>国家ID:</strong> ${country.id}</p>
-                    </div>
+<!--                    <div class="text-gray-700 mb-2">-->
+<!--                         <p><strong>国家ID:</strong> $country.id</p>-->
+<!--                    </div>-->
                     ${dynastyImagesHtml}
                 </div>
             </div>
@@ -1512,7 +1512,7 @@
                 // 检测是否在微信环境中
                 const isWechat = /MicroMessenger/i.test(navigator.userAgent);
 
-                if (isWechat) {
+                if (true) {
                     // 微信特殊处理：直接显示图片供用户长按保存
                     const dataUrl = canvas.toDataURL('image/png', 0.9);
 
