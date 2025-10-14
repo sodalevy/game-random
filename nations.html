@@ -1512,7 +1512,7 @@
                 // 检测是否在微信环境中
                 const isWechat = /MicroMessenger/i.test(navigator.userAgent);
 
-                if (true) {
+                if (isWechat) {
                     // 微信特殊处理：直接显示图片供用户长按保存
                     const dataUrl = canvas.toDataURL('image/png', 0.9);
 
