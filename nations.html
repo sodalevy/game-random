@@ -1440,7 +1440,7 @@
             }
 
             countryDiv.innerHTML = `
-            <div class="flex items-center mb-3">
+            <div class="flex items-center mb-1">
                 <span class="text-lg mr-2">${country.flag}</span>
                 <h3 class="text-xl font-bold text-gray-800">${country.name}</h3>
 <!--                <span class="ml-auto bg-blue-600 text-white text-sm font-medium px-2 py-1 rounded">-->
@@ -1448,7 +1448,7 @@
 <!--                </span>-->
             </div>
 
-            <div class="flex flex-col md:flex-row gap-4">
+            <div class="flex flex-col md:flex-row gap-0">
                 <div class="flex-shrink-0">
                     <img src="${imageUrl}"
                          alt="${country.name} 封面图"
@@ -1471,7 +1471,7 @@
         imgElements.forEach(img => {
             img.crossOrigin = 'anonymous';
         });
-
+        
         // 使用html2canvas生成图片
         // 等待图片加载完成后再生成
         setTimeout(() => {
